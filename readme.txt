@@ -1,3 +1,6 @@
+## HElA: A rapid and accurate package for detection of Helitron-llike elements.
+## Dependencies:
+## Install
 usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}]
                   [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR [-n PROCESS]
 
