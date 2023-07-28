@@ -1,13 +1,13 @@
 ## HElA: A rapid and accurate package for detection of Helitron-llike elements.
 ## Dependencies:
 ## Install
-1. creat enviroment
+### 1. creat enviroment
    `conda create -n hela` or
    `mamba create -n hela`
-2. activate enviroment
+### 2. activate enviroment
    `conda activate hela` or
    `mamba activate hela`
-3. install 
+### 3. install 
 `conda install -c zhenlisme hela -c bioconda -c conda-forge` or
 `mamba install -c zhenlisme hela -c bioconda -c conda-forge`
 
