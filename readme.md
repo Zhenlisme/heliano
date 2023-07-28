@@ -1,5 +1,5 @@
-## HElA: A rapid and accurate package for detection of Helitron-llike elements.
-## Dependencies:
+# HElA: A rapid and accurate package for detection of Helitron-llike elements.
+# Dependencies:
 ```
 - python =3.9.0
 - r-base =4.1
@@ -16,8 +16,8 @@
 - hmmer =3.3.2
 - genometools-genometools =1.6.2=py39h58cc16e_6
 ```
-## Install
-### conda
+# Install
+## conda
 ```
 #creat enviroment
 conda create -n hela
@@ -27,7 +27,7 @@ conda activate hela
 conda install -c zhenlisme hela -c bioconda -c conda-forge
 conda deactivate
 ```
-### mamba
+## mamba
 ```
 #creat enviroment
 mamba create -n hela
@@ -37,7 +37,7 @@ mamba activate hela
 mamba install -c zhenlisme hela -c bioconda -c conda-forge
 mamba deactivate
 ```
-## Usage
+# Usage
 ```
 HELA -h
 usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR
