@@ -1,7 +1,7 @@
 ## HElA: A rapid and accurate package for detection of Helitron-llike elements.
 ## Dependencies:
 ```
-- python ==3.9.0
+- python =3.9.0
 - r-base =4.1
 - biopython
 - pybedtools =0.9.0=py39hd65a603_2
