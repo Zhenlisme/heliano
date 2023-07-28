@@ -38,11 +38,13 @@ mamba install -c zhenlisme hela -c bioconda -c conda-forge
 mamba deactivate
 ```
 ## Usage
-`HELA -h`
-usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}]
-                  [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR [-n PROCESS]
+```
+HELA -h
+usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR
+            [-n PROCESS]
 
-Helitron detection.
+HELA can detect and classify different variants of Helitron-like elements: Helitron, Helentron and Helitron2. email us: zhen.li3@universite-paris-
+saclay.fr
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -66,3 +68,4 @@ optional arguments:
                         The output directory.
   -n PROCESS, --process PROCESS
                         Number of threads to be used.
+```
