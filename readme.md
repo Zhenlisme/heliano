@@ -42,6 +42,10 @@ mamba deactivate
 To install step-by-step, you need to be sure that all dependencies have been installed in your computer and they are added into your enviromental variables.
 
 # Usage
+### 1. To activate the enviroment you created
+`conda activate hela`
+### 2. To check usage manual
+`HELA -h`
 ```
 HELA -h
 usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR
@@ -73,6 +77,8 @@ optional arguments:
   -n PROCESS, --process PROCESS
                         Number of threads to be used.
 ```
+### Run
+Here we will use the genome of Xenopus tropicalis as an example.
 
 # To contact us
 For any questions, please email us:
