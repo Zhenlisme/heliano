@@ -80,6 +80,4 @@ optional arguments:
 Here we will use the genome of Xenopus tropicalis as an example.
 
 # To contact us
-For any questions, please email us:
-### Zhen Li
-li.zhen3@universite-paris-saclay.fr or zhenliseme@gmail.com
+For any questions, please email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
