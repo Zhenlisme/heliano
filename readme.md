@@ -70,3 +70,8 @@ optional arguments:
   -n PROCESS, --process PROCESS
                         Number of threads to be used.
 ```
+
+# To contact us
+For any questions, please email us:
+Zhen Li: zhenliseme@gmail.com or li.zhen3@universite-paris-saclay.fr
+Nicolas Pollet: nicolas.pollet@universite-paris-saclay.fr
