@@ -47,7 +47,6 @@ To install step-by-step, you need to be sure that all dependencies have been ins
 ### 2. To check usage manual
 `HELA -h`
 ```
-HELA -h
 usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR
             [-n PROCESS]
 
@@ -77,7 +76,7 @@ optional arguments:
   -n PROCESS, --process PROCESS
                         Number of threads to be used.
 ```
-### Run
+### 3. To run
 Here we will use the genome of Xenopus tropicalis as an example.
 
 # To contact us
