@@ -82,6 +82,4 @@ Here we will use the genome of Xenopus tropicalis as an example.
 # To contact us
 For any questions, please email us:
 ### Zhen Li
-zhenliseme@gmail.com or li.zhen3@universite-paris-saclay.fr
-### Nicolas Pollet
-nicolas.pollet@universite-paris-saclay.fr
+li.zhen3@universite-paris-saclay.fr or zhenliseme@gmail.com
