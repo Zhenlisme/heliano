@@ -73,5 +73,7 @@ optional arguments:
 
 # To contact us
 For any questions, please email us:
-Zhen Li: zhenliseme@gmail.com or li.zhen3@universite-paris-saclay.fr
-Nicolas Pollet: nicolas.pollet@universite-paris-saclay.fr
+### Zhen Li
+zhenliseme@gmail.com or li.zhen3@universite-paris-saclay.fr
+### Nicolas Pollet
+nicolas.pollet@universite-paris-saclay.fr
