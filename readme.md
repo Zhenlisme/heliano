@@ -39,7 +39,8 @@ mamba install -c zhenlisme hela -c bioconda -c conda-forge
 mamba deactivate
 ```
 ## install step-by-step
-if you 
+To install step-by-step, you need to be sure that all dependencies have been installed in your computer and they are added into your enviromental variables.
+
 # Usage
 ```
 HELA -h
