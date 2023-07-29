@@ -2,20 +2,20 @@
 Helitron-like elements including Helitron, Helentron and Helitron2 are one of the class 2 transposons. They have been found in a diverse range of species and seem to play major roles in the evolution of host genomes. Although they have benn well known for more than twenty years, they were widely admitted as one of few remaining transposons difficult to identify. Here, we propose HELA (Helitron-like elements annotator) which is a rapid and accurate tool for detection of Helitron-like elements.
 # Dependencies:
 ```
-- python =3.9.0
-- r-base =4.1
+- python = 3.9.0
+- r-base = 4.1
 - biopython
-- pybedtools =0.9.0=py39hd65a603_2
+- pybedtools = 0.9.0 =py39hd65a603_2
 - r-bedtoolsr
-- r-seqinr =4.2_16=r41h06615bd_0
-- bedtools =2.30.0
-- dialign2 =2.2.1
+- r-seqinr = 4.2_16 = r41h06615bd_0
+- bedtools = 2.30.0
+- dialign2 = 2.2.1
 - mafft
-- cd-hit =4.8.1
-- blast =2.2.31
-- emboss =6.6.0
-- hmmer =3.3.2
-- genometools-genometools =1.6.2=py39h58cc16e_6
+- cd-hit = 4.8.1
+- blast = 2.2.31
+- emboss = 6.6.0
+- hmmer = 3.3.2
+- genometools-genometools = 1.6.2 = py39h58cc16e_6
 ```
 # Install
 ## conda
@@ -38,6 +38,8 @@ mamba activate hela
 mamba install -c zhenlisme hela -c bioconda -c conda-forge
 mamba deactivate
 ```
+## install step-by-step
+if you 
 # Usage
 ```
 HELA -h
