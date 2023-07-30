@@ -77,7 +77,14 @@ optional arguments:
                         Number of threads to be used.
 ```
 ### 3. To run
-Here we will use the genome of Xenopus tropicalis as an example.
+Here we will use the genome of Xenopus tropicalis as an example.  
+`HELA -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELA_opt`  
+The main result could be found in file **RC.representative.bed** in HELA_opt directory. 
+|columns|meanings|
+| ---- | ---- |
+|1|chrmid|
+NC_030677.2     20246175        20247385        Helentron_left_73-Helentron_right_74    79      +       2.0432e-176     104     Helentron       nonauto       insertion_Helentron_nonauto_1
+NC_030677.2     23640161        23640743        Helentron_left_73-Helentron_right_74    79      +       2.0432e-176     74.3    Helentron       nonauto       insertion_Helentron_nonauto_2
 
 # To contact us
 For any questions, please email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
