@@ -83,7 +83,7 @@ The main result could be found in file **RC.representative.bed** in HELA_opt dir
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
 |NC_030677.2|20246175|20247385|Helentron_left_73-Helentron_right_74|79|+|2.0432e-176|104|Helentron|nonauto|insertion_Helentron_nonauto_1|
-NC_030677.2     23640161        23640743        Helentron_left_73-Helentron_right_74    79      +       2.0432e-176     74.3    Helentron       nonauto       insertion_Helentron_nonauto_2
-
+|NC_030677.2|23640161|23640743|Helentron_left_73-Helentron_right_74|79|+|2.0432e-176|74.3|Helentron|nonauto|insertion_Helentron_nonauto_2|
+......
 # To contact us
 For any questions, please email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
