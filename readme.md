@@ -79,6 +79,7 @@ optional arguments:
 ### 3. To run
 Here we will use the genome of Xenopus tropicalis as an example.  
 `HELA -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELA_opt`  
+note: the genome.fa is the only input which should be a genome file in fasta format.  
 The main result could be found in file **RC.representative.bed** in HELA_opt directory. 
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
