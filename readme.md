@@ -17,34 +17,34 @@ Helitron-like elements including Helitron, Helentron and Helitron2 are one of th
 - hmmer = 3.3.2
 - genometools-genometools = 1.6.2 = py39h58cc16e_6
 ```
-# Install
+# Installation
 ## conda
 ```
-#creat enviroment
+#create the hela environment
 conda create -n hela
-#activate enviroment
+#activate the hela environment
 conda activate hela
-# install 
+# installation 
 conda install -c zhenlisme hela -c bioconda -c conda-forge
 conda deactivate
 ```
 ## mamba
 ```
-#creat enviroment
+#create the hela environment
 mamba create -n hela
-#activate enviroment
+#activate the hela environment
 mamba activate hela
 # install 
 mamba install -c zhenlisme hela -c bioconda -c conda-forge
 mamba deactivate
 ```
-## install step-by-step
+## step-by-step installation
 To install step-by-step, you need to be sure that all dependencies have been installed in your computer and they are added into your enviromental variables. (under developing...)
 
 # Usage
-### 1. To activate the enviroment you created
+### 1. Activate the hela conda environment
 `conda activate hela`
-### 2. To check usage manual
+### 2. Check the HELA binary
 `HELA -h`
 ```
 usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR
@@ -76,7 +76,7 @@ optional arguments:
   -n PROCESS, --process PROCESS
                         Number of threads to be used.
 ```
-### 3. To run
+### 3. Perform a test run of HELA
 Here we will use the genome of Xenopus tropicalis as an example.  
 `HELA -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELA_opt`  
 note: the genome.fa is the only input which should be a genome file in fasta format.  
