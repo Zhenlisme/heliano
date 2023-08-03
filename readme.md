@@ -16,6 +16,7 @@ Helitron-like elements including Helitron, Helentron and Helitron2 are one of th
 - emboss = 6.6.0
 - hmmer = 3.3.2
 - genometools-genometools = 1.6.2 = py39h58cc16e_6
+- rnamotif = 3.1.1
 ```
 # Installation
 ## conda
