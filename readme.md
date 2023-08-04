@@ -41,10 +41,12 @@ mamba deactivate
 ```
 ## step-by-step installation
 To install step-by-step, you need to be sure that all dependencies have been installed in your computer and their pathes have been added into your environmental variables.
-### 1. check and install all dependencies one by one.
-All dependencies except rnamotif could be installed via conda/mamba.
-### 2. download the latest hela package
-git clone 
+1. check and install all dependencies one by one. All dependencies except rnamotif could be installed via conda/mamba.  
+2. download the latest hela package.  
+`git clone https://github.com/Zhenlisme/HELA.git`
+3. switch to the source code dorectory that you cloned at the last step.  
+4. run configure file.
+   `bash configure.sh`  
 # Usage
 ### 1. Activate the hela conda environment
 `conda activate hela`
