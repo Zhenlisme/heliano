@@ -94,10 +94,9 @@ optional arguments:
                         Number of threads to be used.
 ```
 ### 3. Perform a test run of HELA  
-Here we will use the genome of Xenopus tropicalis as an example.  
+Here we will use the genome of Xenopus tropicalis as an example. Perform the following code:  
 `HELA -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELA_opt`  
-note: the genome.fa is the only input which should be a genome file in fasta format.  
-The main result could be found in file **RC.representative.bed** in HELA_opt directory.  
+note: the `genome.fa` is the only input which is the genome file of Xenopus tropicalis in fasta format. The main result could be found in file **RC.representative.bed** in **HELA_opt** directory.  
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
 |NC_030677.2|20246175|20247385|Helentron_left_73-Helentron_right_74|79|+|2.0432e-176|104|Helentron|nonauto|insertion_Helentron_nonauto_1|
