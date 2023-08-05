@@ -59,7 +59,7 @@ Before installation , you need to be sure that all dependencies have been instal
    `bash configure.sh`
 5. You can find HELA in bin/ directory.
 # Usage
-### 1. Activate the hela conda environment  
+### 1. Activate the hela conda environment (for conda/mamba installation)  
 `conda activate hela`  
 ### 2. Check the HELA binary  
 `HELA -h`
