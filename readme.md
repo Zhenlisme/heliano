@@ -9,8 +9,6 @@ Helitron-like elements including Helitron, Helentron and Helitron2 are one of th
 - [Usage](#usage)
 - [To contact us](#to-contact-us)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
 # Dependencies
 ```
 - python = 3.9.0
