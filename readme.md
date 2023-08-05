@@ -1,6 +1,14 @@
 # HElA: A fast and accurate tool for detection of Helitron-like elements.
 Helitron-like elements including Helitron, Helentron and Helitron2 are one of the class 2 transposons. They have been found in a diverse range of species and seem to play major roles in the evolution of host genomes. Although they have benn well known for more than twenty years, they were widely admitted as one of few remaining transposons difficult to identify. Here, we propose HELA (Helitron-like elements annotator) which is a fast and accurate tool for detection of Helitron-like elements.
 
+# Table of contents
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+  * [conda](#conda)
+  * [mamba](#mamba)
+  * [Manual installation](#manual-installation)
+- [Usage](#usage)
+- [To contact us](#to-contact-us)
 
 # Dependencies
 ```
@@ -51,9 +59,9 @@ Before installation , you need to be sure that all dependencies have been instal
    `bash configure.sh`
 5. You can find HELA in bin/ directory.
 # Usage
-1. Activate the hela conda environment  
+### 1. Activate the hela conda environment  
 `conda activate hela`  
-2. Check the HELA binary  
+### 2. Check the HELA binary  
 `HELA -h`
 ```
 usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR
@@ -85,7 +93,7 @@ optional arguments:
   -n PROCESS, --process PROCESS
                         Number of threads to be used.
 ```
-3. Perform a test run of HELA  
+### 3. Perform a test run of HELA  
 Here we will use the genome of Xenopus tropicalis as an example.  
 `HELA -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELA_opt`  
 note: the genome.fa is the only input which should be a genome file in fasta format.  
