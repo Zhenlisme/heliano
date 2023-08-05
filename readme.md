@@ -1,6 +1,10 @@
-[TOC]
 # HElA: A fast and accurate tool for detection of Helitron-like elements.
 Helitron-like elements including Helitron, Helentron and Helitron2 are one of the class 2 transposons. They have been found in a diverse range of species and seem to play major roles in the evolution of host genomes. Although they have benn well known for more than twenty years, they were widely admitted as one of few remaining transposons difficult to identify. Here, we propose HELA (Helitron-like elements annotator) which is a fast and accurate tool for detection of Helitron-like elements.
+
+- [Dependencies]
+- [Installation]
+- [Usage]
+- [To contact us]
 
 # Dependencies:
 ```
