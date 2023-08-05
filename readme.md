@@ -54,10 +54,11 @@ Before installation , you need to be sure that all dependencies have been instal
 1. check and install all dependencies one by one. All dependencies except rnamotif could be installed via conda/mamba.  
 2. download the latest hela package.  
 `git clone https://github.com/Zhenlisme/HELA.git`
-3. switch to the source code dorectory that you cloned at the last step.  
-4. run configure file.  
+3. switch to the source code dorectory that you cloned at the last step.
+   `cd HELA/`  
+5. run configure file.  
    `bash configure.sh`
-5. You can find HELA in bin/ directory.
+6. You can find HELA in bin/ directory.
 # Usage
 ### 1. Activate the hela conda environment (for conda/mamba installation)  
 `conda activate hela`  
