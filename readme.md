@@ -50,15 +50,14 @@ mamba install -c zhenlisme hela -c bioconda -c conda-forge
 mamba deactivate
 ```
 ## Manual installation
-Before installation , you need to be sure that all dependencies have been installed in your computer and their pathes have been added into your environmental variables.
-1. check and install all dependencies one by one. All dependencies except rnamotif could be installed via conda/mamba.  
-2. download the latest hela package.  
+Before installation , you need to be sure that all dependencies have been installed in your computer and their pathes have been added into your environmental variables. All dependencies except rnamotif could be installed via conda/mamba.  
+1. download the latest hela package.  
 `git clone https://github.com/Zhenlisme/HELA.git`
-3. switch to the source code dorectory that you cloned at the last step.  
+2. switch to the source code dorectory that you cloned at the last step.  
    `cd HELA/`  
-5. run configure file.  
+3. run configure file.  
    `bash configure.sh`
-6. You can find HELA in bin/ directory.
+4. You can find HELA in bin/ directory.
 # Usage
 ### 1. Activate the hela conda environment (for conda/mamba installation)  
 `conda activate hela`  
