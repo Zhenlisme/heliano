@@ -6,7 +6,7 @@ from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 import pybedtools as BT
 
-class Homologous_search:
+class Consensus_making:
     def __init__(self, genome, wkdir, represent_bed, process_num):
         self.genome = genome
         self.genome_dict = SeqIO.parse(genome, 'fasta')
@@ -57,15 +57,12 @@ class Homologous_search:
         mfa_dict = SeqIO.parse(mfa, 'fasta')
         mfa_dict = {k.id: k.seq.upper() for k in mfa_dict}
 
-        print(basename)
-        print(cluster_dict)
         for pairname in cluster_dict:
             insertion_name_list = cluster_dict[pairname]
             if len(insertion_name_list) < 2:
                 conseq = str(mfa_dict[insertion_name_list[0]])
                 self.consensus_dict[basename].append(conseq)
                 continue
-            print(pairname)
 
             submfa = ''.join(['Consensus/', basename, '.mfa'])
             subaln = ''.join([submfa, '.fa'])
@@ -161,12 +158,12 @@ class Homologous_search:
 
                 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Making consensus for Helitron-like sequences.")
-    parser.add_argument("-g", "--genome", type=str, required=True, help="The reference genome.")
+    parser = argparse.ArgumentParser(description="Making consensus for Helitron-like sequences. Please visit https://github.com/Zhenlisme/HELA/ for more information. Email us: zhen.li3@universite-paris-saclay.fr")
+    parser.add_argument("-g", "--genome", type=str, required=True, help="The genome file in fasta format.")
     parser.add_argument("-r", "--repsenbed", type=str, required=True, help="The representative bed file.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
-    parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Number of threads to be used.")
+    parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
     Args = parser.parse_args()
-    HomoSearch = Homologous_search(os.path.abspath(Args.genome), os.path.abspath(Args.opdir), os.path.abspath(Args.repsenbed), Args.process)
-    HomoSearch.main()
+    makeconsenus = Consensus_making(os.path.abspath(Args.genome), os.path.abspath(Args.opdir), os.path.abspath(Args.repsenbed), Args.process)
+    makeconsenus.main()
 

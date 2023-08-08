@@ -20,11 +20,12 @@ class Structure_search:
         self.maximum_length = sorted([len(self.genome_dict[i]) for i in self.genome_dict])[-1]
 
     def stem_loop(self, stem_loop_description, minus_tailone=1):
+        ## start coord is 1 not 0
         rnamotifopt = ''.join([os.path.basename(self.genome), '.stemloop.txt'])
         with open(rnamotifopt, 'w') as rnamf:
             rnamotif_program = subprocess.Popen(["rnamotif", "-sh", "-descr", stem_loop_description, self.genome],
-                                                stdout=subprocess.PIPE)
-            rmprune_program = subprocess.Popen(['rmprune'], stdin=rnamotif_program.stdout, stdout=rnamf)
+                                                stderr=subprocess.DEVNULL, stdout=subprocess.PIPE)
+            rmprune_program = subprocess.Popen(['rmprune'], stdin=rnamotif_program.stdout, stderr=subprocess.DEVNULL, stdout=rnamf)
             rnamotif_program.wait()
             rmprune_program.wait()
             rnamf.write('')
@@ -36,18 +37,18 @@ class Structure_search:
                     continue
                 splitline = re.split('\s+', line.strip(' \n'))
                 chrid = splitline[0]
+                ## positive strand
                 if splitline[2] == '0':
                     strand = '+'
                     start = int(splitline[3]) + self.START
                     end = start + int(splitline[4]) - 1
-                    #start = start + 1 if Args.IS1 else start  ## To remove the A nucleotide for helitron insertion.
                     end = end - 1 if minus_tailone else end  ## To remove the T nucleotide
+                ## negative strand
                 else:
                     strand = '-'
                     start = int(splitline[3]) + self.START - int(splitline[4]) + 1
                     end = start + int(splitline[4]) - 1
                     start = start + 1 if minus_tailone else start  ## To remove the T nucleotide
-                    #end = end - 1 if Args.IS1 else end  ## To remove the A nucleotide for helitron insertion.
                 seq = ''.join(splitline[5:])
                 stem_len = len(splitline[5])
                 loop_len = len(splitline[6])
@@ -59,10 +60,9 @@ class Structure_search:
     def regularexpression_match(self, pattern, strand='+'):
         ## Use helitronscanner lcv file to detect terminal region of helitron
         coord_record = []
-        for chrm in self.genome_dict:  ## Use the real coordination that is 1 as the start site.
+        for chrm in self.genome_dict:  ##  start coord is 1 not 0
             if strand == '+':
                 genom_seq = str(self.genome_dict[chrm]).upper()
-                ## remember to minus 2 at start coord. The 'TC' bases not included in result
                 pCT_start_list = re.finditer(pattern, genom_seq)
                 for p_coord in pCT_start_list:
                     start = str(p_coord.start() + self.START + 1)
@@ -71,7 +71,6 @@ class Structure_search:
             else:
                 genom_seq = str(self.genome_dict[chrm].reverse_complement()).upper()
                 sequence_length = len(genom_seq)
-                ## remember to minus 2 at start coord. The 'TC' bases not included in result
                 pCT_start_list = re.finditer(pattern, genom_seq)
                 for p_coord in pCT_start_list:
                     end = str(sequence_length - p_coord.start() + self.START)
@@ -81,21 +80,24 @@ class Structure_search:
         return coord_record
 
     def inverted_detection(self, sequencefile, minitirlen, maxtirlen, mintirdist, maxtirdist, seed):
-        ### The counting system should starts from 1 not 0
+        ## start coord is 1 not 0
         dbname = ''.join([os.path.basename(sequencefile), '.invdb'])
         invttirfile = ''.join([os.path.basename(sequencefile), '.inv.txt'])
+        ## build database
         mkinvdb = subprocess.Popen(
             ['gt', 'suffixerator', '-db', sequencefile, '-indexname', dbname, '-mirrored', '-dna', '-suf', '-lcp',
-             '-bck'], stdout=subprocess.DEVNULL)
+             '-bck'], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         mkinvdb.wait()
+        ## run tirvish
         with open(invttirfile, 'w') as invf:
             runinvsearch = subprocess.Popen(
                 ['gt', 'tirvish', '-index', dbname, '-mintirlen', str(minitirlen), '-maxtirlen', str(maxtirlen),
                  '-similar', str(Args.simtir), '-mintirdist', str(mintirdist), '-maxtirdist', str(maxtirdist), '-mintsd', '0',
-                 '-seed', str(seed), '-vic', '1', '-overlaps', 'all', '-xdrop', '0'], stdout=invf)
+                 '-seed', str(seed), '-vic', '1', '-overlaps', 'all', '-xdrop', '0'], stderr=subprocess.DEVNULL, stdout=invf)
             runinvsearch.wait()
 
         invt_list = []
+        ## The default output is in gff format, extract coord information and do filteration.
         with open(invttirfile, 'r') as F:
             for line in F:
                 if line.startswith('#'):
@@ -113,16 +115,14 @@ class Structure_search:
                         left_end = str(int(splitlines[4]) + self.START)
                         left_expand = '-'.join([left_start, left_end])
                         invt_length_left = int(splitlines[4]) - int(splitlines[3]) + 1
-                        # left_seq = str(self.genome_dict[chrmid][int(splitlines[3])-1:int(splitlines[4])])
                         t += 1
                     else:
                         right_start = str(int(splitlines[3]) + self.START)
                         right_end = str(int(splitlines[4]) + self.START)
                         right_expand = '-'.join([right_start, right_end])
                         invt_length_right = int(splitlines[4]) - int(splitlines[3]) + 1
-                        # right_seq = str(self.genome_dict[chrmid][int(splitlines[3])-1:int(splitlines[4])])
-                        # print(left_start, left_end, right_start, right_end, left_seq, right_seq)
-                        if invt_length_left >= 12 and invt_length_right >= 12 and invt_length_left <= 15 and invt_length_right <= 15:  ## invt length should be in the range of 12 to 15
+                        ## length of inverted sequences should be greater than 11 and shorter than 16
+                        if invt_length_left >= 12 and invt_length_right >= 12 and invt_length_left <= 15 and invt_length_right <= 15:
                             invt_list.append([chrmid, str(left_start), str(right_end), left_expand, right_expand,
                                               (invt_length_right + invt_length_left) / 2, sim])
 
@@ -131,6 +131,7 @@ class Structure_search:
         os.system('rm %s*' % dbname)
         return invt_list
 
+# define Homologous_search class to find Helitron-like transposase domain and theri auto/non-auto relatives
 class Homologous_search:
     def __init__(self, rep_hel_hmm, genome, wkdir, headerfile, window, distance_domain, pvalue, process_num):
         self.rep_hel_hmm = rep_hel_hmm
@@ -143,7 +144,7 @@ class Homologous_search:
         self.window = window
         self.distance_domain = distance_domain
         self.pvalue = float(pvalue)
-
+        # To transform the header file to regular expression.
         with open(headerfile, 'r') as F:
             headerpattern_list = F.read().rstrip().split('\n')
             self.headerpattern = '|'.join(headerpattern_list) if not Args.IS1 else '|'.join([''.join(['A', i]) for i in headerpattern_list])
@@ -164,24 +165,24 @@ class Homologous_search:
         genome_size = sorted(genome_size, key=lambda x: x[0])
         with open(self.genome_size, 'w') as F:
             F.writelines([''.join([i[0], '\t', str(i[1]), '\n']) for i in genome_size])
-
+        
+        # To define stem_loop structure ending with CTRR motif of Helitron 
         self.CTRR_stem_loop_description = '%s/CTRR_stem_loop.descr' % CWD
         CTRR_description = """descr\nh5 ( minlen=5, maxlen=15, pairfrac=0.80)\nss ( minlen=1, maxlen=8)\nh3\nss (minlen=5, maxlen=20, seq="ctrr%s$")\n"""
+        # Add 'T' in the end if user limitted the 'A-T' insertion site for Helitron.
         CTRR_description = CTRR_description % 't' if Args.IS1 else CTRR_description % ''
         with open(self.CTRR_stem_loop_description, 'w') as F:
             F.write(CTRR_description)
 
+        # To define stem_loop structure of  Helentron/Helitron2
         self.subtir_description = '%s/subtir_stem_loop.descr' % CWD
+        # Add 'T' in the end if user limitted the 'T-T' insertion site for Helentron/Helitron2.
         if Args.IS2:
             subtir_description = """descr\nh5 ( minlen=5, maxlen=16, pairfrac=0.8 )\nss ( minlen=1, maxlen=16 )\nh3\nss (minlen=6, maxlen=16, seq="t$")\n"""
         else:
             subtir_description = """descr\nh5 ( minlen=5, maxlen=16, pairfrac=0.8 )\nss ( minlen=1, maxlen=16 )\nh3\nss (minlen=6, maxlen=8)\n"""
         with open(self.subtir_description, 'w') as F:
             F.write(subtir_description)
-
-        #self.short_tir_description = '%s/short_tir.descr' % CWD
-        #with open(self.short_tir_description, 'w') as F:
-        #    F.write("""parms\nwc += gu;\ndescr\nh5 ( minlen=4, maxlen=8, pairfrac=0.85 )\nss ( minlen=1, maxlen=5 )\nh3\n""")
 
         dbdir = 'GenomeDB/'
         if not os.path.exists(dbdir):
@@ -192,9 +193,12 @@ class Homologous_search:
         makeblastndb.wait()
 
     def hmmsearch(self, subgenome):
+        # Run hmmersearch program to search for Helitron-like transposase
         orf_file = ''.join([subgenome, '.orf'])
         hmm_opt = ''.join([subgenome, '.hmmsearch.out'])
-        """The index of getorf output starts from 1, not 0"""
+
+        #The index of getorf output starts from 1, not 0
+        # Use getorf to predicte open reading frames for a given genome
         get_orf = subprocess.Popen(['getorf', '-sequence', subgenome, '-outseq', orf_file, '-minsize', '100'],
                                    stderr=subprocess.DEVNULL)
         get_orf.wait()
@@ -211,12 +215,14 @@ class Homologous_search:
             return Rep_opline, Hel_opline
         if not os.path.exists(hmm_opt):
             return Rep_opline, Hel_opline
+
+        # To parser hmmsearch output
         with open(hmm_opt, 'r') as F:
             for line in F:
                 if line.startswith('#'):
                     continue
                 splitlines = re.split('\s+', line.rstrip())
-                domain, sub_class = splitlines[3].replace('.aln', '').split('_')
+                domain, sub_class = splitlines[3].split('_')
                 subchrname = "_".join(splitlines[0].split('_')[:-1])
                 chrm_name, START = subchrname.split('startat')
                 start, end = re.findall('\[(\d+)\s+-\s+(\d+)\]', line)[0]
@@ -251,8 +257,6 @@ class Homologous_search:
         for key in Rep_dict:
             rep_candidate = sorted(Rep_dict[key], key=lambda x: float(x[4]))[-1]  ## Select the case with highest score.
             Rep_opline.append(rep_candidate)
-        # Hel_opline = sorted(Hel_opline, key=lambda x: [x[0], int(x[1])])
-        # Rep_opline = sorted(Rep_opline, key=lambda x: [x[0], int(x[1])])
         try:
             Hel_bed = BT.BedTool([BT.create_interval_from_list(line) for line in Hel_opline]).sort()
             Rep_bed = BT.BedTool([BT.create_interval_from_list(line) for line in Rep_opline]).sort()
@@ -261,6 +265,7 @@ class Homologous_search:
             return [], []
 
     def intersect(self, location1, location2, slip=0, lportion=0.0, rportion=0.0, bool_and=1):
+        # Define intersect function to check if two intervals are intersected or not, similar to bedtools intersect
         location1 = sorted([int(i) for i in location1])
         location2 = sorted([int(i) for i in location2])
         if location1[0] - slip > location2[1] or location1[1] < location2[0] - slip:
@@ -282,33 +287,8 @@ class Homologous_search:
                 else:
                     return False
 
-    def ORF_boundary(self, sequencefile, strand='+'):
-        orf_file = ''.join([sequencefile, '.orf'])
-        # """The index of getorf output starts from 1, not 0"""
-        get_orf = subprocess.Popen(['getorf', '-sequence', sequencefile, '-outseq', orf_file, '-minsize', '220'],
-                                   stderr=subprocess.DEVNULL)
-        get_orf.wait()
-
-        ORF_OPT = []
-        with open(orf_file, 'r') as F:
-            for line in F:
-                if line.startswith('>'):
-                    if strand == '+' and 'REVERSE SENSE' in line:
-                        continue
-                    elif strand == '-' and 'REVERSE SENSE' not in line:
-                        continue
-                    else:
-                        start, end = re.findall('\[(\d+)\s+-\s+(\d+)\]', line)[0]
-                        ORF_OPT.append(start)
-                        ORF_OPT.append(end)
-        ORF_OPT = sorted(ORF_OPT, key=lambda x: int(x))
-        os.remove(orf_file)
-        if ORF_OPT:
-            return [ORF_OPT[0], ORF_OPT[-1]]
-        else:
-            return ['0', '0']
-
     def merge_bedfile(self, BedInput, orf=True, window=1500, splitid=False, S=True):
+        # Define function to merge two distance-close genomic features
         if S:
             cluster_bed = BedInput.cluster(d=window, s=True)
         else:
@@ -353,15 +333,17 @@ class Homologous_search:
             return 0
 
     def parser_hmmsearch(self, Rep_bed, Hel_bed, subgenome):
+        # To find Rep-Hel structure which might imply a possible Helitron-like transposases.
         if not Rep_bed or not Hel_bed:
             return []
-        ## merge helicase or rep domain bedfile, use bedtools cluster to merge. Splicing sites
+        
+        ## To merge helicase or rep domain splicing sites (helitron-like transposase contain introns)
         merge_hel = self.merge_bedfile(Hel_bed, orf=True, window=1500)
         merge_rep = self.merge_bedfile(Rep_bed, orf=True, window=1500)
         if not merge_hel or not merge_rep:  ## Either hel or rep data is null
             return []
-        ## To find rep and helicase gene pairs that rep is less than 2000 bp upstream of hel
 
+        ## To find rep and helicase gene pairs that rep is less than self.distance_domain bp upstream of hel
         joint_rephel = merge_rep.window(merge_hel, l=0, r=int(self.distance_domain), sm=True, sw=True)
         bedlist = []
         for line in joint_rephel:
@@ -371,12 +353,11 @@ class Homologous_search:
             rep_start, rep_end = splitlines[1:3]
             hel_start, hel_end = splitlines[7:9]
 
-            if self.intersect([int(rep_start), int(rep_end)], [int(hel_start), int(hel_end)], lportion=0.2,
-                              rportion=0.2):  ### If the helicase and rep domain have a intersection, skip
+            # If the helicase and rep domain have a intersection, skip
+            if self.intersect([int(rep_start), int(rep_end)], [int(hel_start), int(hel_end)], lportion=0.2, rportion=0.2):
                 continue
             rep_orf = splitlines[4].split('-')
             hel_orf = splitlines[10].split('-')
-            # loc=sorted([rep_orf[0], rep_orf[1], hel_orf[0], hel_orf[1]], key=lambda x:int(x))
             loc = sorted([rep_start, rep_end, hel_start, hel_end], key=lambda x: int(x))
             start, end = loc[0], loc[-1]  ## They are REP and Helicase domain region
             bedlist.append((chrm, int(start), int(end), '-'.join([rep_start, rep_end]), '-'.join([hel_start, hel_end]),
@@ -386,6 +367,7 @@ class Homologous_search:
         return bedlist
 
     def heltentron_terminal(self, helentron_bed):
+        # Define function to try to recover Helentron terminal region (stem-loop structure) which is behind the right part of TIRs
         opbed_list = []
         extend_seq = []
         extend_file = 'helentron.extend.fa'
@@ -440,7 +422,7 @@ class Homologous_search:
                     opbed_list.append([chrmid, start, stem_stop, name, score, strand, pvalue, Bscore])
                 else:
                     stem_loop = [i for i in stem_loop_dict[extend_id] if i[5] == '-']
-                    ## order by  end position (longer), stem length (longer), loop length (shorter), total length (shorter)
+                    ## order by end position (longer), stem length (longer), loop length (shorter), total length (shorter)
                     stem_loop = sorted(stem_loop, key=lambda x: [x[0], -int(x[2]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
                     if not stem_loop:
                         opbed_list.append([chrmid, start, stop, name, score, strand, pvalue, Bscore])
@@ -454,17 +436,16 @@ class Homologous_search:
         for key in remained_cases:
             for sublist in extend_dict[key]:
                 opbed_list.append(sublist[:8])
-        #[opbed_list.append(extend_dict[key][:8]) for key in remained_cases]
         ### To creat bedtools objective
         opbed = BT.BedTool([BT.create_interval_from_list(line) for line in opbed_list])
-        #os.remove(extend_file)
+        os.remove(extend_file)
         return opbed
 
     def intergrated_program(self, subgenome):
+        # This function is used to recover terminal signals of Helitron-like elements (TIRs for Helentron/Helitron2; TC... motif and ...CTRR motif for Helitron)
         rep_hmmsearch_opt, hel_hmmsearch_opt = self.hmmsearch(subgenome)
         ORF_list = self.parser_hmmsearch(rep_hmmsearch_opt, hel_hmmsearch_opt, subgenome)
-        sys.stdout.write(
-            'Find %s rep-hel blocks in %s.\n' % (str(len(ORF_list)), os.path.basename(subgenome).replace('.fa', '')))
+        sys.stdout.write('Find %s rep-hel blocks in %s.\n' % (str(len(ORF_list)), os.path.basename(subgenome).replace('.fa', '')))
         RC_total_candidate = []
         for Helitron_candidate in ORF_list:
             ORF_chrmid = Helitron_candidate[0]
@@ -476,13 +457,14 @@ class Homologous_search:
             chrm_limit = len(self.genome_dict[ORF_chrmid])
             rep_name, hel_name = Helitron_candidate[6:8]
 
-            ORFID = '-'.join([ORF_chrmid, str(ORF_start),
-                              str(ORF_stop)])  ## To produce orf id which will be used as sole identifier of terminal signals.
+            ## To produce orf id which will be used as sole identifier of terminal signals.
+            ORFID = '-'.join([ORF_chrmid, str(ORF_start), str(ORF_stop)])
             temp_name_for_helitron = '-'.join([ORF_chrmid, str(ORF_start), str(ORF_stop)])
             expansion_all_seqname = ''.join([temp_name_for_helitron, '.expansion.fa'])
             left_seqname = ''.join([temp_name_for_helitron, '.left.fa'])
             right_seqname = ''.join([temp_name_for_helitron, '.right.fa'])
 
+            # Define regions to search for terminal signals
             left_boundary = ORF_start - self.window
             right_boundary = ORF_stop + self.window
 
@@ -492,19 +474,21 @@ class Homologous_search:
             if right_boundary >= chrm_limit:
                 right_boundary = chrm_limit
 
-            ## left and right boundary should not touch the last and the next Rep-Hel region
+            ## To avoid get big tandem heltron-like elements
             Helitron_candidate_index = ORF_list.index(Helitron_candidate)
+            # Left boundary should not touch last Rep-Hel region
             if Helitron_candidate_index >= 1:  ## not the fist one
                 last_candidate = ORF_list[Helitron_candidate_index - 1]
                 last_stop = last_candidate[2]
                 left_boundary = last_stop if left_boundary < last_stop else left_boundary
+            # Right boundary should not touch the next Rep-Hel region
             if Helitron_candidate_index < len(ORF_list) - 1:  ## not the last one
                 next_candidate = ORF_list[Helitron_candidate_index + 1]
                 next_start = next_candidate[1]
                 right_boundary = next_start if right_boundary > next_start else right_boundary
-
-            left_seq = str(self.genome_dict[ORF_chrmid][
-                           left_boundary - 1: ORF_start])  ## To extend 50 nt of ORF region in case that the terminal region of ORF is shorter than predicted
+           
+            # To output extended sequences to fasta files
+            left_seq = str(self.genome_dict[ORF_chrmid][left_boundary - 1: ORF_start])
             right_seq = str(self.genome_dict[ORF_chrmid][ORF_stop: right_boundary])
             expansion_all_seq = str(self.genome_dict[ORF_chrmid][left_boundary - 1: right_boundary])
             with open(expansion_all_seqname, 'w') as F:
@@ -513,17 +497,19 @@ class Homologous_search:
                 F.write(''.join(['>', ORF_chrmid, '\n', left_seq, '\n']))
             with open(right_seqname, 'w') as F:
                 F.write(''.join(['>', ORF_chrmid, '\n', right_seq, '\n']))
-
+            
+            # Candiadte is Helitron, try to search for left terminal signals in left extension and right terminal signals in right extension.
             if hel_name == 'Helitron' and rep_name == 'Helitron':
                 if strand == '+':
-                    TC_list = Structure_search(genome=left_seqname, START=left_boundary - 1).regularexpression_match(
-                        self.headerpattern, '+')
+                    # left terminal signals are TC... like
+                    TC_list = Structure_search(genome=left_seqname, START=left_boundary - 1).regularexpression_match(self.headerpattern, '+')
+                    # right terminal signals are stem-loop structures ending with CTRR motif.
                     Stem_loop_list = Structure_search(genome=right_seqname, START=ORF_stop).stem_loop(
                         self.CTRR_stem_loop_description, minus_tailone=int(Args.IS1))
                     Stem_loop_list = [i for i in Stem_loop_list if i[-1] == '+']  ## To select the positive strand motif
+                    # To reduce one if user set 'AT' insertion because the A was added at the begaining of header regular expression
                     if Args.IS1:
                         TC_list = [[line[0], str(int(line[1])+1), line[2]] for line in TC_list]
-                        #Stem_loop_list = [[line[0], line[1], str(int(line[2])-1), line[3], line[4], line[5]] for line in Stem_loop_list]
                 else:
                     TC_list = Structure_search(genome=right_seqname, START=ORF_stop).regularexpression_match(
                         self.headerpattern, '-')
@@ -532,20 +518,24 @@ class Homologous_search:
                     Stem_loop_list = [i for i in Stem_loop_list if i[-1] == '-']  ## To select the negative strand motif
                     if Args.IS1:
                         TC_list = [[line[0], line[1], str(int(line[2]) - 1)] for line in TC_list]
-                        #Stem_loop_list = [[line[0], str(int(line[1]) + 1), line[2], line[3], line[4], line[5]] for line in Stem_loop_list]
                 RC_total_candidate.append((
                                           ORF_chrmid, str(ORF_start), str(ORF_stop), strand, 'Helitron', tuple(TC_list),
                                           tuple(Stem_loop_list), ORFID))
+
+            # Candidate is Helentron or Helitron2
             else:
-                ## Helentron or Helitron2
                 if hel_name in ['Helentron', 'Helitron2'] and rep_name in ['Helentron', 'Helitron2']:
                     class_name = rep_name if rep_name == hel_name else '_or_'.join([rep_name, hel_name])
                 else:
+                    # unable to distinguish, will take it as Helentron-like
                     class_name = '_or_'.join([rep_name, hel_name])
+
+                # Size of terminal inverted sequences should be greater than the size of predicted transposase
                 mini_dist_tir = ORF_stop - ORF_start
+                # Size of terminal inverted sequences should be less than the size of extension
                 max_dist_tir = 2 * int(self.window) + ORF_stop - ORF_start
 
-                ## The idea length of helentron should be from 12 to 15, set the maximum length to 20 and exclude the long tir (>15 nt) after.
+                ## The expected length of helentron/helitron2 should be from 12 to 15, set the maximum length to 20 and exclude the long tir (>15 nt) after.
                 invt_list = Structure_search(genome=expansion_all_seqname, START=left_boundary - 1).inverted_detection(
                     expansion_all_seqname, 9, 20, mini_dist_tir, max_dist_tir, 8)
                 ## To keep the case that fully covered with ORF region
@@ -584,13 +574,15 @@ class Homologous_search:
         return RC_total_candidate
 
     def cdhitest_clust(self, input_fa, opfile, helitron_type, id=0.8):
+        # This function is for clustering of highly identity sequences
         cons_name = '.'.join([helitron_type, 'reduce.temp'])
         cluster_file = '.'.join([cons_name, 'clstr'])
         run_cluster = subprocess.Popen(
             ['cd-hit-est', '-i', input_fa, '-o', cons_name, '-d', '0', '-aS', '0.8', '-c', str(id), '-G', '1', '-g',
              '1', '-b', '500', '-T', str(self.process_num), '-M', '0'], stdout=subprocess.DEVNULL)
         run_cluster.wait()
-
+        
+        # To get classification information
         cluster_dict = {}
         with open(cluster_file, 'r') as F:
             for line in F:
@@ -637,6 +629,7 @@ class Homologous_search:
         return groups
 
     def split_genome(self, chunk_size=200000000, flanking_size=50000, num_groups=2):
+        # To split big genomes into small chunks
         if not os.path.exists('genomes'):
             os.mkdir('genomes')
         subgenome_list = []
@@ -691,12 +684,14 @@ class Homologous_search:
         return subgenome_list
 
     def autonomous_detect(self):
+        # main program to search for transposae and terminal signals.
         subgenome_list = self.split_genome(chunk_size=200000000, flanking_size=20000, num_groups=200)
         if len(subgenome_list) < self.process_num:
             processnum = len(subgenome_list)
         else:
             processnum = self.process_num
-
+        
+        # Use python multiple threading
         planpool = ThreadPool(processnum)
         run_result = []
         for subgenome in subgenome_list:
@@ -712,6 +707,7 @@ class Homologous_search:
         return Helitron_list
 
     def blastn(self, query_file, merge=True):
+        # To search for homologous of given sequences
         blastn_opt = ''.join([query_file, '.tbl'])
         blastn_bed = ''.join([query_file, '.bed6'])
         mergeblastn_bed = ''.join([query_file, '.merge.bed6'])
@@ -751,6 +747,7 @@ class Homologous_search:
             return blastn_bed
 
     def merge_overlaped_intervals(self, bedinput, classname, mobile_type):
+        # To merge overlaped candidates
         bedinput = sorted([list(line) for line in bedinput],
                           key=lambda x: [x[0], x[5], int(x[1])])  ## sort by chrm, strand, and coord
         if not bedinput:
@@ -792,6 +789,7 @@ class Homologous_search:
         return alternative_list
 
     def split_joint(self, left_bed, right_bed, combind_id_list, sub_bed_dir, half_distance):
+        # To split big bedfiles 
         leftflank_dir = ''.join([sub_bed_dir, '/', 'leftflank'])
         rightflank_dir = ''.join([sub_bed_dir, '/', 'rightflank'])
         jointflank_file = ''.join([sub_bed_dir, '/', 'left_right.path.join'])
@@ -903,6 +901,7 @@ class Homologous_search:
             os.chdir('../')
             return [], []
 
+        # To redunce redundency via cd-hit-est
         left_cluster_dict = self.cdhitest_clust(left_ter_file, left_ter_reduce_file, helitron_type=''.join([classname, '_left']), id=0.9)
         right_cluster_dict = self.cdhitest_clust(right_ter_file, right_ter_reduce_file, helitron_type=''.join([classname, '_right']), id=0.9)
 
@@ -990,7 +989,8 @@ class Homologous_search:
             half_distance = int(round(int(distance_na) / 2, 0))
 
             joint_filepath_df = self.split_joint(left_bed, right_bed, valid_combind_list, subed_dir, half_distance)
-
+            
+            # To run fisher's exact text to select the co-occured left and right terminal signals
             fisher_program = subprocess.Popen(
                 ['Rscript', FISHER_PRO, BEDTOOLS_PATH,
                 self.genome_size, joint_filepath_df, opt_pvalue, str(self.process_num), str(self.pvalue), joint_file],
@@ -1006,8 +1006,8 @@ class Homologous_search:
                 ORF_sig_list.extend(list({BT.create_interval_from_list(line[6:14]) for line in ORF_sig_intersection}))
 
         BT.BedTool(ORF_sig_list).sort().saveas('%s_RC.auto.bed' % classname)
-        ## candidates whose terminal signals occurred once.
 
+        ## candidates whose terminal signals occurred once.
         ORF_without_sigter_bed = ORF_bed.intersect(significant_joint_bed, v=True, s=True, wa=True)
         monomer_bed_intersection = ORF_without_sigter_bed.intersect(monomer_joint_bed, f=1, wo=True, s=True)
         monomer_bed_dict = defaultdict(list)
@@ -1097,6 +1097,7 @@ class Homologous_search:
                         RF.write('\n')
 
     def MakeSelection(self, alternative_list):
+        # This function is to filter out the candidates who might insert into other superfamily of transposons. 
         sys.stdout.write('Begin to run boundary check program.\n')
         subwkdir = 'boundary_align'
         if not os.path.exists(subwkdir):
@@ -1213,23 +1214,23 @@ class Homologous_search:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="HELA can detect and classify different variants of Helitron-like elements: Helitron, Helentron and Helitron2. email us: zhen.li3@universite-paris-saclay.fr")
-    parser.add_argument("-g", "--genome", type=str, required=True, help="The reference genome.")
+    parser = argparse.ArgumentParser(description="HELA can detect and classify different variants of Helitron-like elements: Helitron, Helentron and Helitron2. Please visit https://github.com/Zhenlisme/HELA/ for more information. Email us: zhen.li3@universite-paris-saclay.fr")
+    parser.add_argument("-g", "--genome", type=str, required=True, help="The genome file in fasta format.")
     parser.add_argument("-w", "--window", type=int, default=10000, required=False,
-                        help="To check terminal markers within a given window bp upstream and downstream of ORF ends, default is 10 kb.")
+                        help="To check terminal signals within a given window bp upstream and downstream of ORF ends, default is 10 kb.")
     parser.add_argument("-dm", "--distance_domain", type=int, default=2500, required=False,
                         help="The distance between HUH and Helicase domain, default is 2500.")
     parser.add_argument("-pt", "--pair_helitron", type=int, default=0, required=False, choices=[0, 1],
-                        help="The 5' and 3' terminal signal pairs should come from the same autonomous Helitrons or not. 0: no, 1: yes. default no.")
+                        help="For Helitron, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default no.")
     parser.add_argument("-is1", "--IS1", type=int, default=0, required=False, choices=[0, 1],
-                        help="require the insertion site of Helitron seeds as AT. 0: no, 1: yes. default no.")
+                        help="Set the insertion site of autonomous Helitron as A and T. 0: no, 1: yes. default no.")
     parser.add_argument("-is2", "--IS2", type=int, default=0, required=False, choices=[0, 1],
-                        help="Set the insertion site of Helentron/Helitron2 seeds as TT. 0: no, 1: yes. default no.")
+                        help="Set the insertion site of autonomous Helentron/Helitron2 as T and T. 0: no, 1: yes. default no.")
     parser.add_argument("-sim_tir", "--simtir", type=int, default=100, required=False, choices=[100, 90, 80],
                         help="Set the simarity between short inverted repeats(TIRs) of Helitron2/Helentron. Default 100.")
-    parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-3, help="The p-value for fisher test.")
+    parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-3, help="The p-value for fisher's exact test.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
-    parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Number of threads to be used.")
+    parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
     Args = parser.parse_args()
 
     ## To set and check dependency file path
