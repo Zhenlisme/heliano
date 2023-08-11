@@ -163,6 +163,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--repsenbed", type=str, required=True, help="The representative bed file.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.0')
     Args = parser.parse_args()
     makeconsenus = Consensus_making(os.path.abspath(Args.genome), os.path.abspath(Args.opdir), os.path.abspath(Args.repsenbed), Args.process)
     makeconsenus.main()

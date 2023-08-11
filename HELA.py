@@ -20,40 +20,56 @@ class Structure_search:
         self.maximum_length = sorted([len(self.genome_dict[i]) for i in self.genome_dict])[-1]
 
     def stem_loop(self, stem_loop_description, minus_tailone=1):
-        ## start coord is 1 not 0
-        rnamotifopt = ''.join([os.path.basename(self.genome), '.stemloop.txt'])
-        with open(rnamotifopt, 'w') as rnamf:
-            rnamotif_program = subprocess.Popen(["rnamotif", "-sh", "-descr", stem_loop_description, self.genome],
-                                                stderr=subprocess.DEVNULL, stdout=subprocess.PIPE)
-            rmprune_program = subprocess.Popen(['rmprune'], stdin=rnamotif_program.stdout, stderr=subprocess.DEVNULL, stdout=rnamf)
-            rnamotif_program.wait()
-            rmprune_program.wait()
-            rnamf.write('')
+        ## Function to find hairpin structures. Start coord is 1 not 0
+        rnabobopt = ''.join([os.path.basename(self.genome), '.stemloop.txt'])
+        with open(rnabobopt, 'w') as rnabf:
+            rnabob_program = subprocess.Popen(["rnabob", "-c", "-q", "-F", "-s", stem_loop_description, self.genome],
+                                              stderr=subprocess.DEVNULL, stdout=rnabf)
+            rnabob_program.wait()
+        if not os.path.exists(rnabobopt):
+            return []
         stem_loop_loc = []
-        with open(rnamotifopt, 'r') as F:
-            [F.readline() for i in range(4)]
+
+        complement_dict = {'A': "T", "T": "A", "G": "C", "C": "G",
+                           "K": "M", "M": "K", "Y": "R", "R": "Y", "S": "S", "W": "W",
+                           "B": "V", "V": "B", "H": "D", "D": "H", "N": "N", "X": "X"}
+
+        with open(rnabobopt, 'r') as F:
             for line in F:
-                if line.startswith('>'):
-                    continue
-                splitline = re.split('\s+', line.strip(' \n'))
-                chrid = splitline[0]
-                ## positive strand
-                if splitline[2] == '0':
-                    strand = '+'
-                    start = int(splitline[3]) + self.START
-                    end = start + int(splitline[4]) - 1
-                    end = end - 1 if minus_tailone else end  ## To remove the T nucleotide
-                ## negative strand
+                line = line.strip()
+                if re.match('\d', line):
+                    splitline = re.split('\s+', line)[:3]
+                    chrid = splitline[2]
+                    ## positive strand
+                    if int(splitline[0]) < int(splitline[1]):
+                        strand = '+'
+                        length = int(splitline[1]) - int(splitline[0]) + 1
+                        start = int(splitline[0]) + self.START
+                        end = start + length - 1
+                        end = end - 1 if minus_tailone else end  ## To remove the T nucleotide
+                    ## negative strand
+                    else:
+                        strand = '-'
+                        length = int(splitline[0]) - int(splitline[1]) + 1
+                        start = int(splitline[0]) + self.START - length + 1
+                        end = start + length - 1
+                        start = start + 1 if minus_tailone else start  ## To remove the T nucleotide
                 else:
-                    strand = '-'
-                    start = int(splitline[3]) + self.START - int(splitline[4]) + 1
-                    end = start + int(splitline[4]) - 1
-                    start = start + 1 if minus_tailone else start  ## To remove the T nucleotide
-                seq = ''.join(splitline[5:])
-                stem_len = len(splitline[5])
-                loop_len = len(splitline[6])
-                stem_loop_loc.append([chrid, str(start), str(end), str(stem_len), str(loop_len), strand])
-        os.remove(rnamotifopt)
+                    seq = line.strip('|').split('|')
+                    helix_seq1, loop_seq, helix_seq2, tail_seq = seq
+                    stem_len = len(helix_seq1)
+                    loop_len = len(loop_seq)
+                    ## To revise the rnabob output. rnabob sometimes does not return as long as possible of helix. need to revise it.
+                    midpoint = int(len(loop_seq) / 2)
+                    for i in range(midpoint):
+                        ## if the left nucleotide is reverse-complementary to the right nucleotide
+                        if loop_seq[i] == complement_dict[loop_seq[-i - 1]]:
+                            stem_len += 1
+                            loop_len -= 2
+                    # The loop should exist.
+                    if loop_len >= 1:
+                        stem_loop_loc.append([chrid, str(start), str(end), str(stem_len), str(loop_len), strand])
+        os.remove(rnabobopt)
         stem_loop_loc = sorted(stem_loop_loc, key=lambda x: [x[0], int(x[1])])
         return stem_loop_loc
 
@@ -168,9 +184,9 @@ class Homologous_search:
         
         # To define stem_loop structure ending with CTRR motif of Helitron 
         self.CTRR_stem_loop_description = '%s/CTRR_stem_loop.descr' % CWD
-        CTRR_description = """descr\nh5 ( minlen=5, maxlen=15, pairfrac=0.80)\nss ( minlen=1, maxlen=8)\nh3\nss (minlen=5, maxlen=20, seq="ctrr%s$")\n"""
+        CTRR_description = """r1 s1 r1' s2\nr1 1:1 NNNNN[10]:[10]NNNNN TGCA\ns1 0 N[7]\ns2 0 N[15]CTRR%s\n"""
         # Add 'T' in the end if user limitted the 'A-T' insertion site for Helitron.
-        CTRR_description = CTRR_description % 't' if Args.IS1 else CTRR_description % ''
+        CTRR_description = CTRR_description % 'T' if Args.IS1 else CTRR_description % ''
         with open(self.CTRR_stem_loop_description, 'w') as F:
             F.write(CTRR_description)
 
@@ -178,9 +194,9 @@ class Homologous_search:
         self.subtir_description = '%s/subtir_stem_loop.descr' % CWD
         # Add 'T' in the end if user limitted the 'T-T' insertion site for Helentron/Helitron2.
         if Args.IS2:
-            subtir_description = """descr\nh5 ( minlen=5, maxlen=16, pairfrac=0.8 )\nss ( minlen=1, maxlen=16 )\nh3\nss (minlen=6, maxlen=16, seq="t$")\n"""
+            subtir_description = """r1 s1 r1' s2\nr1 1:1 NNNNN[10]:[10]NNNNN TGCA\ns1 0 N[15]\ns2 0 NNNNN[10]T\n"""
         else:
-            subtir_description = """descr\nh5 ( minlen=5, maxlen=16, pairfrac=0.8 )\nss ( minlen=1, maxlen=16 )\nh3\nss (minlen=6, maxlen=8)\n"""
+            subtir_description = """r1 s1 r1' s2\nr1 1:1 NNNNN[10]:[10]NNNNN TGCA\ns1 0 N[15]\ns2 0 NNNNNN[2]\n"""
         with open(self.subtir_description, 'w') as F:
             F.write(subtir_description)
 
@@ -1231,6 +1247,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-3, help="The p-value for fisher's exact test.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.0')
     Args = parser.parse_args()
 
     ## To set and check dependency file path
@@ -1246,10 +1263,9 @@ if __name__ == "__main__":
         exit(0)
 
     try:
-        subprocess.check_output("which rnamotif", shell=True)
-        subprocess.check_output("which rmprune", shell=True)
+        subprocess.check_output("which rnabob", shell=True)
     except:
-        print("Could not find rnamotif path.")
+        print("Could not find rnabob path.")
         exit(0)
 
     try:
