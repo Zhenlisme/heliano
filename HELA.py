@@ -179,6 +179,9 @@ class Homologous_search:
         self.chrm_size = {i:len(self.genome_dict[i]) for i in self.genome_dict}
         genome_size = list(self.chrm_size.items())
         genome_size = sorted(genome_size, key=lambda x: x[0])
+        ## To determine the evalue for short-sequence blastn, set the bit-score cutoff as 30, the evalue cutoff should follow the formula: m*n/(2**30)
+        sum_genomesize = sum([i[1] for i in genome_size])
+        self.evalue_blastn = sum_genomesize * 30/(2**30)
         with open(self.genome_size, 'w') as F:
             F.writelines([''.join([i[0], '\t', str(i[1]), '\n']) for i in genome_size])
         
@@ -729,7 +732,7 @@ class Homologous_search:
         mergeblastn_bed = ''.join([query_file, '.merge.bed6'])
         blastn_pro = subprocess.Popen(
             ['blastn', '-db', self.genomedb, '-query', query_file, '-num_threads', str(self.process_num),
-             '-max_target_seqs', '999999999', '-evalue', '500', '-task', 'blastn-short',
+             '-max_target_seqs', '999999999', '-evalue', str(self.evalue_blastn), '-task', 'blastn-short',
              '-outfmt', '6 qseqid sseqid pident qstart qend sstart send evalue qlen bitscore', '-out', blastn_opt])
         blastn_pro.wait()
         oplines = []
@@ -739,10 +742,6 @@ class Homologous_search:
                 query_name = splitlines[0]
                 chrm, identity, qstart, qend, sstart, send, evalue, qlen, bitscore = splitlines[1:10]
                 coverage = round((abs(int(qstart) - int(qend)) + 1) / abs(int(qlen)), 2)
-                #if float(identity) < 80 or coverage < 0.8:
-                #if float(identity) < 80:
-                if float(bitscore) < 30:
-                    continue
                 if int(sstart) < int(send):
                     START = sstart
                     END = send
