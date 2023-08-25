@@ -40,6 +40,10 @@ class Structure_search:
                 if re.match('\d', line):
                     splitline = re.split('\s+', line)[:3]
                     chrid = splitline[2]
+                    ## To avoid rnabob bugs
+                    if int(splitline[1]) < 0:
+                        print(splitline)
+                        continue
                     ## positive strand
                     if int(splitline[0]) < int(splitline[1]):
                         strand = '+'
@@ -179,13 +183,14 @@ class Homologous_search:
         self.chrm_size = {i:len(self.genome_dict[i]) for i in self.genome_dict}
         genome_size = list(self.chrm_size.items())
         genome_size = sorted(genome_size, key=lambda x: x[0])
-        ## To determine the evalue for short-sequence blastn, set the bit-score cutoff as 30, the evalue cutoff should follow the formula: m*n/(2**30)
-        sum_genomesize = sum([i[1] for i in genome_size])
-        self.evalue_blastn = sum_genomesize * 30/(2**30)
         with open(self.genome_size, 'w') as F:
             F.writelines([''.join([i[0], '\t', str(i[1]), '\n']) for i in genome_size])
-        
-        # To define stem_loop structure ending with CTRR motif of Helitron 
+
+        ## To determine the evalue for short-sequence blastn, set the bit-score cutoff as 30, the evalue cutoff should follow the formula: m*n/(2**30)
+        sum_genomesize = sum([i[1] for i in genome_size])
+        self.evalue_blastn = sum_genomesize * 30 / (2 ** int(Args.score))
+
+        # To define stem_loop structure ending with CTRR motif of Helitron
         self.CTRR_stem_loop_description = '%s/CTRR_stem_loop.descr' % CWD
         CTRR_description = """r1 s1 r1' s2\nr1 1:1 NNNNN[10]:[10]NNNNN TGCA\ns1 0 N[7]\ns2 0 N[15]CTRR%s\n"""
         # Add 'T' in the end if user limitted the 'A-T' insertion site for Helitron.
@@ -306,13 +311,9 @@ class Homologous_search:
                 else:
                     return False
 
-    def merge_bedfile(self, BedInput, orf=True, window=1500, splitid=False, S=True):
+    def merge_bedfile(self, BedInput, window=1500):
         # Define function to merge two distance-close genomic features
-        if S:
-            cluster_bed = BedInput.cluster(d=window, s=True)
-        else:
-            cluster_bed = BedInput.cluster(d=window)
-
+        cluster_bed = BedInput.cluster(d=window, s=True)
         merge_dict = defaultdict(list)
         merge_list = []
         for line in cluster_bed:
@@ -329,20 +330,12 @@ class Homologous_search:
             start = coord_set[0]
             stop = coord_set[-1]
             strand = coordlist[0][5]
-            if orf:
-                ## To determain sub_class, select the case with highest score
-                sub_class = sorted(coordlist, key=lambda x: float(x[4]))[-1][3]
-                ## To merge the ORF location
-                orf_list = sorted([int(b) for i in coordlist for b in i[-1].split('-')])
-                orf_coord = '-'.join([str(orf_list[0]), str(orf_list[-1])])
-            else:
-                sub_class = '.'
-                bitscore = [float(i[4]) for i in coordlist]
-                orf_coord = str(sum(bitscore) / len(bitscore))
-            if splitid:
-                chrm_id, sub_class = coordlist[0][0].split('#')
-            else:
-                chrm_id = coordlist[0][0]
+            ## To determain sub_class, select the case with highest score
+            sub_class = sorted(coordlist, key=lambda x: float(x[4]))[-1][3]
+            ## To merge the ORF location
+            orf_list = sorted([int(b) for i in coordlist for b in i[-1].split('-')])
+            orf_coord = '-'.join([str(orf_list[0]), str(orf_list[-1])])
+            chrm_id = coordlist[0][0]
             merge_list.append([chrm_id, str(start), str(stop), sub_class, orf_coord, strand])
         # merge_list = sorted(merge_list, key=lambda x: [x[0], int(x[1])])
         if merge_list:
@@ -357,8 +350,8 @@ class Homologous_search:
             return []
         
         ## To merge helicase or rep domain splicing sites (helitron-like transposase contain introns)
-        merge_hel = self.merge_bedfile(Hel_bed, orf=True, window=1500)
-        merge_rep = self.merge_bedfile(Rep_bed, orf=True, window=1500)
+        merge_hel = self.merge_bedfile(Hel_bed, window=1500)
+        merge_rep = self.merge_bedfile(Rep_bed, window=1500)
         if not merge_hel or not merge_rep:  ## Either hel or rep data is null
             return []
 
@@ -406,15 +399,29 @@ class Homologous_search:
             if strand == '+':
                 extend_id = '-'.join(['seq', str(start), str(stop), 'p'])
                 detect_seq = str(self.genome_dict[chrmid][stop: stop + 80])
+                ## To remove short seequence
+                if len(detect_seq) < 17:
+                    continue
+                ## To remove N rich seq
+                N_count = detect_seq.count('N')
+                if N_count >= 5:
+                    continue
                 extend_dict[extend_id].append([chrmid, start, stop, name, score, strand, pvalue, Bscore,
                                           stop])  ## The last element is the initial start for terminal detection region
                 extend_seq.append(''.join(['>', extend_id, '\n', detect_seq, '\n']))
             else:
                 extend_id = '-'.join(['seq', str(start), str(stop), 'n'])
                 terminal_start = 0 if start - 80 < 0 else start - 80
+                detect_seq = str(self.genome_dict[chrmid][terminal_start: start])
+                ## To remove short seequence
+                if len(detect_seq) < 17:
+                    continue
+                ## To remove N rich seq
+                N_count = detect_seq.count('N')
+                if N_count >= 5:
+                    continue
                 extend_dict[extend_id].append([chrmid, start, stop, name, score, strand, pvalue, Bscore,
                                           terminal_start])  ## The last element is the initial start for terminal detection region
-                detect_seq = str(self.genome_dict[chrmid][terminal_start: start])
                 extend_seq.append(''.join(['>', extend_id, '\n', detect_seq, '\n']))
         if not extend_seq:  ## means empty
             return helentron_bed
@@ -725,18 +732,15 @@ class Homologous_search:
         Helitron_list = sorted(Helitron_list, key=lambda x: [x[0], int(x[1]), int(x[2])])
         return Helitron_list
 
-    def blastn(self, query_file, merge=True):
+    def blastn(self, query_file, blastn_bed):
         # To search for homologous of given sequences
         blastn_opt = ''.join([query_file, '.tbl'])
-        blastn_bed = ''.join([query_file, '.bed6'])
-        mergeblastn_bed = ''.join([query_file, '.merge.bed6'])
         blastn_pro = subprocess.Popen(
             ['blastn', '-db', self.genomedb, '-query', query_file, '-num_threads', str(self.process_num),
              '-max_target_seqs', '999999999', '-evalue', str(self.evalue_blastn), '-task', 'blastn-short',
              '-outfmt', '6 qseqid sseqid pident qstart qend sstart send evalue qlen bitscore', '-out', blastn_opt])
         blastn_pro.wait()
-        oplines = []
-        with open(blastn_opt, 'r') as F:
+        with open(blastn_opt, 'r') as F, open(blastn_bed, 'w') as wF:
             for line in F:
                 splitlines = line.rstrip().split('\t')
                 query_name = splitlines[0]
@@ -750,16 +754,9 @@ class Homologous_search:
                     START = send
                     END = sstart
                     strand = '-'
-                if merge:
-                    oplines.append(['#'.join([chrm, query_name]), START, END, query_name, bitscore, strand])
-                else:
-                    oplines.append([chrm, START, END, query_name, bitscore, strand])
-        blastn_bed = BT.BedTool([BT.create_interval_from_list(line) for line in oplines]).sort()
-        if merge:
-            mergeblastn_bed = self.merge_bedfile(blastn_bed, orf=False, window=100, splitid=True, S=True)  ## To merge the tandem repeats
-            return mergeblastn_bed
-        else:
-            return blastn_bed
+                wF.write(''.join([chrm, '\t', START, '\t', END, '\t', query_name, '\t', bitscore, '\t', strand, '\n']))
+        if os.path.exists(blastn_opt):
+            os.remove(blastn_opt)
 
     def merge_overlaped_intervals(self, bedinput, classname, mobile_type):
         # To merge overlaped candidates
@@ -802,49 +799,6 @@ class Homologous_search:
             alternative_list.extend(candidate_list)
         # chrmid, start, stop, pairname, count, strand, pvalue, classname, mobile_type, blockname
         return alternative_list
-
-    def split_joint(self, left_bed, right_bed, combind_id_list, sub_bed_dir, half_distance):
-        # To split big bedfiles 
-        leftflank_dir = ''.join([sub_bed_dir, '/', 'leftflank'])
-        rightflank_dir = ''.join([sub_bed_dir, '/', 'rightflank'])
-        jointflank_file = ''.join([sub_bed_dir, '/', 'left_right.path.join'])
-
-        if os.path.exists(sub_bed_dir):
-            shutil.rmtree(sub_bed_dir)
-        os.mkdir(sub_bed_dir)
-        os.mkdir(leftflank_dir)
-        os.mkdir(rightflank_dir)
-
-        left_dict = defaultdict(list)
-        right_dict = defaultdict(list)
-
-        for line in left_bed:
-            left_dict[line[3]].append(line)
-        for line in right_bed:
-            right_dict[line[3]].append(line)
-
-        ## To find uniq left and right terminal markers
-        left_list, right_list = [], []
-        for combinied in combind_id_list:
-            left_list.append(combinied[0])
-            right_list.append(combinied[1])
-        left_list = list(set(left_list))
-        right_list = list(set(right_list))
-        ## To output sub-bed files
-        for left_name in left_list:
-            leftflank_file = ''.join([leftflank_dir, '/', left_name, '.bed'])
-            subbed = BT.BedTool(left_dict[left_name]).sort()
-            subbed.flank(g=self.genome_size, l=0, r=half_distance, s=True).sort().saveas(leftflank_file)
-        for right_name in right_list:
-            rightflank_file = ''.join([rightflank_dir, '/', right_name, '.bed'])
-            subbed = BT.BedTool(right_dict[right_name]).sort()
-            subbed.flank(g=self.genome_size, l=half_distance, r=0, s=True).sort().saveas(rightflank_file)
-        ## To output join file
-        file_list = ["".join([leftflank_dir, '/', combin[0], '.bed', '\t', rightflank_dir, '/', combin[1], '.bed', '\n']) for
-                     combin in combind_id_list]
-        with open(jointflank_file, 'w') as F:
-            F.writelines(file_list)
-        return jointflank_file
 
     def prepare_terminal_seq(self, Helitron_list, pair=False, classname='Helitron'):
         if not os.path.exists(classname):
@@ -912,17 +866,17 @@ class Homologous_search:
                 leftF.writelines(left_seq)
                 rightF.writelines(right_seq)
 
-        if not left_exist or not right_exist:  ## means that either left or right terminal signals does not exist, so skip blastn
+        if not left_exist or not right_exist:  ## means that neither left nor right terminal signals exist, so skip blastn
             os.chdir('../')
             return [], []
 
-        # To redunce redundency via cd-hit-est
+        ### To redunce redundency via cd-hit-est
         left_cluster_dict = self.cdhitest_clust(left_ter_file, left_ter_reduce_file, helitron_type=''.join([classname, '_left']), id=0.9)
         right_cluster_dict = self.cdhitest_clust(right_ter_file, right_ter_reduce_file, helitron_type=''.join([classname, '_right']), id=0.9)
 
         ### To get the collapsed cluster pairs
+        collapsed_pair_dict = defaultdict(list)
         if pair:
-            collapsed_pair_dict = defaultdict(list)
             terminal_pair_dict = dict(Helitron_pair_list)
             if classname == 'Helitron':  ## pair the left and right terminals that ever appears on the same Helitron region.
                 for left_name in terminal_pair_dict:
@@ -931,120 +885,85 @@ class Homologous_search:
                         collapsed_left_clust = left_cluster_dict[left_name]
                         collapsed_right_clust = right_cluster_dict[right_name]
                         collapsed_pair_dict[collapsed_left_clust].append(collapsed_right_clust)
-                for key in collapsed_pair_dict:
-                    collapsed_pair_dict[key]=list(set(collapsed_pair_dict[key]))
             else:  ## pair inverted repeats
                 for left_name in terminal_pair_dict:
                     right_name = terminal_pair_dict[left_name]
                     collapsed_left_clust = left_cluster_dict[left_name]
                     collapsed_right_clust = right_cluster_dict[right_name]
                     collapsed_pair_dict[collapsed_left_clust].append(collapsed_right_clust)
-        ## To creat bedtool boject
-        ORF_bed = BT.BedTool(ORF_bedfile)
-        left_bedfile_name, right_bedfile_name = '%s.left.bed' % classname, '%s.right.bed' % classname
+            # To reduce redundency
+            for key in collapsed_pair_dict:
+                collapsed_pair_dict[key] = list(set(collapsed_pair_dict[key]))
+        ## To produce combinid.txt, the file will be empty if not require for pairing
+        combinid_file = '%s.combinid.txt' % classname
+        with open(combinid_file, 'w') as F:
+            for left in collapsed_pair_dict:
+                for right in collapsed_pair_dict[left]:
+                    F.write(''.join([left, '\t', right, '\n']))
 
-        left_bed = self.blastn(left_ter_reduce_file).saveas(left_bedfile_name)
-        right_bed = self.blastn(right_ter_reduce_file).saveas(right_bedfile_name)
-
-        ### to pair left and right terminal signals
+        ## To evaluate the size range
         max_orf_length = sorted(ORF_length_list)[-1]
         distance_na = int(self.window) * 2 + max_orf_length
-        sys.stdout.write('The length of %s is expected to be shorter than %s.\n' % (classname, str(distance_na+100)))
-        joint_terminal_bed = left_bed.window(right_bed, l=0, r=distance_na, sm=True, sw=True).saveas('%s.joint' % classname)
+        half_distance = int(round(int(distance_na) / 2, 0))
+        sys.stdout.write('The length of %s is expected to be shorter than %s.\n' % (classname, str(distance_na + 100)))
 
-        joint_terminal_dict = defaultdict(list)
+        ## To run blastn to get homologies
+        left_bedfile_name, right_bedfile_name = '%s.left.bed' % classname, '%s.right.bed' % classname
+        self.blastn(left_ter_reduce_file, left_bedfile_name)
+        self.blastn(right_ter_reduce_file, right_bedfile_name)
 
-        ## Do filteration, should filter out the case that occur only once.
-        for line in joint_terminal_bed:
-            ## To remove the case whose left and right signal are seriously overlaped
-            if self.intersect(line[1:3], line[7:9]):
-                continue
-            left_name, right_name = line[3], line[9]
-            if pair:
-                if right_name not in collapsed_pair_dict[left_name]:  ## This will be considered as fake joint as they don't form terminal inverted repeats.
-                    continue
-            combiname = (left_name, right_name)
-            loc = sorted([int(line[1]), int(line[2]), int(line[7]), int(line[8])])
-            pairname = '-'.join([line[3], line[9]])
-            score = str(float(line[4]) + float(line[10]))
-            new_line = BT.create_interval_from_list([line[0], loc[0], loc[-1], pairname, 1, line[5], 1, score])
-            joint_terminal_dict[combiname].append(new_line)
+        ## Prepare for fisher's exact test (avoid overloading, to split bedfiles )
+        sys.stdout.write("Prepare for windowing for %s ...\n" % classname)
+        subed_dir = '_'.join([classname, 'SubBedBlastn'])
+        try:
+            split_joint_program = subprocess.Popen(
+                ['Rscript', SPLIT_JOINT_PRO, left_bedfile_name, right_bedfile_name, combinid_file, subed_dir,
+                str(self.process_num), self.genome_size, str(half_distance), BEDTOOLS_PATH],
+                stdout=subprocess.DEVNULL)
+            split_joint_program.wait()
+            joint_filepath_blastn = ''.join([subed_dir, '/', 'left_right.path.join'])
+        except:
+            sys.stderr.write("Windowing program failed...\n")
+            exit(0)
 
-        ## To filter out the case whose occurence time is less than two
-        valid_combind_list = []
-        joint_terminal_list, monomer_terminal_list = [], []
-        for combinid in joint_terminal_dict:
-            sub_list = joint_terminal_dict[combinid]
-            if len(sub_list) > 1:
-                joint_terminal_list.extend(sub_list)
-                valid_combind_list.append(combinid)
-            else:
-                monomer_terminal_list.extend(sub_list)
-
-        if not joint_terminal_list and not monomer_terminal_list:
-            os.chdir('../')
-            return [], []
-
-        del joint_terminal_dict
-        gc.collect()
-
-        ## To output the filtered window joint bed file
-        joint_file = '%s.joint.filtered.bed' % classname
-        BT.BedTool([line for line in joint_terminal_list]).saveas(joint_file)
-        monomer_terminal_file = '%s.monomer.filtered.bed' % classname
-        monomer_joint_bed = BT.BedTool([line for line in monomer_terminal_list]).sort().saveas(monomer_terminal_file)
-
-        #### To find autonomous helitrons ###########
-        significant_joint_bed = BT.BedTool([])
-        ORF_sig_list = []
-        if os.path.getsize(joint_file):
-            opt_pvalue = '%s.joint.pvalue.bed' % classname
-            sys.stdout.write("Begin to run fisher's exact test for %s!\n" % classname)
-            subed_dir = '_'.join([classname, 'SubBed'])
-            half_distance = int(round(int(distance_na) / 2, 0))
-
-            joint_filepath_df = self.split_joint(left_bed, right_bed, valid_combind_list, subed_dir, half_distance)
-            
-            # To run fisher's exact text to select the co-occured left and right terminal signals
+        ## To run fisher's exact text to select the co-occured left and right terminal signals
+        sys.stdout.write("Begin to run fisher's exact test for %s!\n" % classname)
+        fisher_pvalue_file = '%s.joint.pvalue.bed' % classname
+        try:
             fisher_program = subprocess.Popen(
-                ['Rscript', FISHER_PRO, BEDTOOLS_PATH,
-                self.genome_size, joint_filepath_df, opt_pvalue, str(self.process_num), str(self.pvalue), joint_file],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                ['Rscript', FISHER_PRO, BEDTOOLS_PATH, self.genome_size, joint_filepath_blastn, fisher_pvalue_file,
+                str(self.process_num), str(self.pvalue)], stdout=subprocess.DEVNULL)
             fisher_program.wait()
             sys.stdout.write("Fisher's exact test finished for %s!\n" % classname)
 
-            if os.path.exists(opt_pvalue):
-                significant_joint_bed = BT.BedTool(opt_pvalue)
-                ## candidates whose terminal signals could be found.
-                ## ORF intersect with significant signals.
-                ORF_sig_intersection = ORF_bed.intersect(significant_joint_bed, f=1, wo=True, s=True)
-                ORF_sig_list.extend(list({BT.create_interval_from_list(line[6:14]) for line in ORF_sig_intersection}))
+        except:
+            sys.stderr.write("Fisher's exact test failed...\n")
+            exit(0)
 
-        BT.BedTool(ORF_sig_list).sort().saveas('%s_RC.auto.bed' % classname)
+        ORF_bed = BT.BedTool(ORF_bedfile)
+        ORF_sig_list = []
 
-        ## candidates whose terminal signals occurred once.
-        ORF_without_sigter_bed = ORF_bed.intersect(significant_joint_bed, v=True, s=True, wa=True)
-        monomer_bed_intersection = ORF_without_sigter_bed.intersect(monomer_joint_bed, f=1, wo=True, s=True)
-        monomer_bed_dict = defaultdict(list)
-        [monomer_bed_dict[i.name].append(list(i[6:14])) for i in monomer_bed_intersection]
+        ## To get autonomous candidates.
+        fisher_pvalue_bed = BT.BedTool(fisher_pvalue_file)
+        ## candidates whose significant terminal signals are able to be found.
+        orf_fisher_bed = fisher_pvalue_bed.intersect(ORF_bed, F=1, wa=True, s=True)
+        ORF_sig_list.extend(list({line for line in orf_fisher_bed}))
 
-        for orfid in monomer_bed_dict:
-            interval_list = monomer_bed_dict[orfid]
-            candidate = sorted(interval_list, key=lambda x: (int(x[2]) - int(x[1])))[0]  ## Try to select the shortest one.
-            ORF_sig_list.append(BT.create_interval_from_list(candidate))
-            
-        ## candidates whose terminal signals could not be found.
-        monomer_bed = BT.BedTool(ORF_sig_list).sort()
-        ORF_without_ter_bed=ORF_without_sigter_bed.intersect(monomer_bed, v=True, s=True, wa=True)
+        ## candidates whose significant terminal signals are unable to be found.
+        ORF_without_ter_bed=ORF_bed.intersect(fisher_pvalue_bed, v=True, s=True, wa=True)
         [ORF_sig_list.append(BT.create_interval_from_list([line[0], line[1], line[2], line[3], 1, line[5], 1, '0'])) for line in ORF_without_ter_bed]
 
         RC_with_orf = BT.BedTool(ORF_sig_list).sort().saveas('%s_RC.auto.bed' % classname)
-        non_autonomous = significant_joint_bed.intersect(RC_with_orf, f=0.8, wa=True, v=True).saveas('%s_RC.nonauto.bed' % classname)
 
-        if pair and classname != 'Helitron':  ## To find stem loop structure of Helentron
+        ## To get non-autonomous candidates
+        non_autonomous = fisher_pvalue_bed.intersect(RC_with_orf, f=0.5, wa=True, v=True).sort().saveas('%s_RC.nonauto.bed' % classname)
+
+        ## To find stem loop structure of Helentron
+        if classname != 'Helitron':
             RC_with_orf = self.heltentron_terminal(RC_with_orf).saveas('%s_RC.auto.bed' % classname)
             non_autonomous = self.heltentron_terminal(non_autonomous).saveas('%s_RC.nonauto.bed' % classname)
 
+        ## To merge candidate blocks
         auto_alternative_list = self.merge_overlaped_intervals(RC_with_orf, classname, 'auto')
         nonauto_alternative_list = self.merge_overlaped_intervals(non_autonomous, classname, 'nonauto')
 
@@ -1067,7 +986,8 @@ class Homologous_search:
 
         candidate_bed = BT.BedTool(
             [BT.create_interval_from_list([line[0], line[1], line[2], line[3], line[7], line[5]]) for line in pairlist])
-        candidate_bed = self.merge_bedfile(candidate_bed, orf=False, window=100)
+        #candidate_bed = self.merge_bedfile(candidate_bed, orf=False, window=100)
+        candidate_bed = candidate_bed.merge(d=100, c='4,5,6', o='first,mean,first')
         candidate_list = sorted([list(line) for line in candidate_bed], key=lambda x: -float(x[4]))
         if len(candidate_list) < 2:
             return 0
@@ -1235,32 +1155,36 @@ if __name__ == "__main__":
                         help="To check terminal signals within a given window bp upstream and downstream of ORF ends, default is 10 kb.")
     parser.add_argument("-dm", "--distance_domain", type=int, default=2500, required=False,
                         help="The distance between HUH and Helicase domain, default is 2500.")
-    parser.add_argument("-pt", "--pair_helitron", type=int, default=0, required=False, choices=[0, 1],
-                        help="For Helitron, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default no.")
-    parser.add_argument("-is1", "--IS1", type=int, default=0, required=False, choices=[0, 1],
-                        help="Set the insertion site of autonomous Helitron as A and T. 0: no, 1: yes. default no.")
-    parser.add_argument("-is2", "--IS2", type=int, default=0, required=False, choices=[0, 1],
-                        help="Set the insertion site of autonomous Helentron/Helitron2 as T and T. 0: no, 1: yes. default no.")
+    parser.add_argument("-pt", "--pair_helitron", type=int, default=1, required=False, choices=[0, 1],
+                        help="For Helitron, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default yes.")
+    parser.add_argument("-is1", "--IS1", type=int, default=1, required=False, choices=[0, 1],
+                        help="Set the insertion site of autonomous Helitron as A and T. 0: no, 1: yes. default yes.")
+    parser.add_argument("-is2", "--IS2", type=int, default=1, required=False, choices=[0, 1],
+                        help="Set the insertion site of autonomous Helentron/Helitron2 as T and T. 0: no, 1: yes. default yes.")
     parser.add_argument("-sim_tir", "--simtir", type=int, default=100, required=False, choices=[100, 90, 80],
                         help="Set the simarity between short inverted repeats(TIRs) of Helitron2/Helentron. Default 100.")
-    parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-3, help="The p-value for fisher's exact test.")
+    parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-3, help="The p-value for fisher's exact test. default is 1e-3.")
+    parser.add_argument("-s", "--score", type=int, required=False, default=32,
+                        help="The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 100, default is 32.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
     parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.0')
     Args = parser.parse_args()
-
+    if int(Args.score) < 30 or int(Args.score) >= 100:
+        print("The bitscore value should be greater than 30 and less than 100.")
+        exit(0)
     ## To set and check dependency file path
     HMMFILE = '_HMM_'
     HEADERFILE = '_HEADER_'
     FISHER_PRO = '_FISHER_'
     BOUNDARY_PRO = '_BOUNDARY_'
+    SPLIT_JOINT_PRO = '_SPLIT_JOINT_'
     try:
         BEDTOOLS_PATH = subprocess.check_output("which bedtools", shell=True).decode().rstrip()
         BEDTOOLS_PATH = '/'.join(BEDTOOLS_PATH.split('/')[:-1])
     except:
         print("Could not find bedtools path.")
         exit(0)
-
     try:
         subprocess.check_output("which rnabob", shell=True)
     except:
@@ -1319,6 +1243,9 @@ if __name__ == "__main__":
         exit(0)
     if not os.path.exists(FISHER_PRO):
         print("Fisher's exact test program not found!")
+        exit(0)
+    if not  os.path.exists(SPLIT_JOINT_PRO):
+        print("Split bed file program not found!")
         exit(0)
 
     HomoSearch = Homologous_search(HMMFILE, os.path.abspath(Args.genome), os.path.abspath(Args.opdir),

@@ -1,0 +1,43 @@
+package:
+  name: hela
+  version: 1.0.0
+
+source:
+  path: /home/li/Helitron/conda_build/hela_conda7/hela
+
+build: 
+  number: 0
+
+requirements: 
+  bulid: 
+    - python =3.9.0
+    - r-base =4.1
+  host:
+    - libgcc-ng >=12
+    - python =3.9.0
+    - r-base =4.1
+  run: 
+    - python =3.9.0
+    - r-base =4.1
+    - biopython
+    - pybedtools =0.9.0=py39hd65a603_2
+    - r-bedtoolsr
+    - r-seqinr =4.2_16=r41h06615bd_0
+    - bedtools =2.30.0
+    - dialign2 =2.2.1
+    - mafft
+    - cd-hit =4.8.1
+    - blast =2.2.31
+    - emboss =6.6.0
+    - hmmer =3.3.2
+    - genometools-genometools =1.6.2=py39h58cc16e_6 
+    - rnabob
+  test:
+    commands:
+      - HELA -h
+  about:
+    home: https://github.com/Zhenlisme/HELA/
+    summary: "HELA: Helitron-like elements annotator"
+    description: A fast and accurate tool for Helitron-like elements detection.
+
+

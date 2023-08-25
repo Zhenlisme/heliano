@@ -23,8 +23,8 @@ if [[ ${bedtools} == '' ]];then echo "Dependency bedtools was not installed!";de
 dialign2=`which dialign2-2`
 if [[ ${dialign2} == '' ]];then echo "Dependency dialign2 was not installed!";dependency_stat=0;fi
 
-rnamotif=`which rnamotif`
-if [[ ${rnamotif} == '' ]];then echo "Dependency rnamotif was not installed!";dependency_stat=0;fi
+rnabob=`which rnabob`
+if [[ ${rnabob} == '' ]];then echo "Dependency rnabob was not installed!";dependency_stat=0;fi
 
 getorf=`which getorf`
 if [[ ${getorf} == '' ]];then echo "Dependency getorf was not installed!";dependency_stat=0;fi
@@ -61,15 +61,18 @@ then
 fi
 
 ## set pathes for HELA
+SCRIT_DIR_PATH=`pwd`
 
-BCHECK=`realpath HELA_bcheck.R`
-FISHER=`realpath HELA_fisher.R`
-HMMmodel=`realpath RepHel.hmm`
-Headermodel=`realpath tclcv.txt`
+BCHECK=${SCRIT_DIR_PATH}/HELA_bcheck.R
+FISHER=${SCRIT_DIR_PATH}/HELA_fisher.R
+HMMmodel=${SCRIT_DIR_PATH}/RepHel.hmm
+Headermodel=${SCRIT_DIR_PATH}/tclcv.txt
+SPLIT=${SCRIT_DIR_PATH}/SplitJoint.R
 
 cp HELA.py HELA
 
 sed -i "s|_INTERPRETERPYTHON_PATH_|${myPYTHON_PATH}|" HELA
+
 sed -i "s|_HMM_|${HMMmodel}|" HELA
 
 sed -i "s|_HEADER_|${Headermodel}|" HELA
@@ -78,9 +81,12 @@ sed -i "s|_FISHER_|${FISHER}|" HELA
 
 sed -i "s|_BOUNDARY_|${BCHECK}|" HELA
 
+sed -i "s|_SPLIT_JOINT_|${SPLIT}|" HELA
+
 chmod 755 HELA
 
 ## set pathes for HELA_cons
+
 cp HELA_cons.py HELA_cons
 sed -i "s|_INTERPRETERPYTHON_PATH_|${myPYTHON_PATH}|" HELA_cons
 chmod 755 HELA_cons
