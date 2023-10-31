@@ -1,5 +1,5 @@
-# HElA: A fast and accurate tool for detection of Helitron-like elements.
-Helitron-like elements, including Helitron, Helentron and Helitron2, are one of the class 2 transposons. They have been found in diverse species and seem to play significant roles in the evolution of host genomes. Although known for over twenty years, Helitron sequences are still challenging to identify. Here, we propose HELA (Helitron-like elements annotator), a fast and accurate tool for detecting Helitron-like elements.
+# HELIANO: A fast and accurate tool for detection of Helitron-like elements.
+Helitron-like elements, including Helitron, Helentron and Helitron2, are one of the class 2 transposons. They have been found in diverse species and seem to play significant roles in the evolution of host genomes. Although known for over twenty years, Helitron sequences are still challenging to identify. Here, we propose HELIANO (Helitron-like elements annotator), a fast and accurate tool for detecting Helitron-like elements.
 
 # Table of contents
 - [Dependencies](#dependencies)
@@ -31,42 +31,42 @@ Helitron-like elements, including Helitron, Helentron and Helitron2, are one of 
 # Installation
 ## conda
 ```
-#create the hela environment
-conda create -n hela
-#activate the hela environment
-conda activate hela
+#create the HELIANO environment
+conda create -n HELIANO
+#activate the HELIANO environment
+conda activate HELIANO
 # installation 
-conda install -c zhenlisme hela -c bioconda -c conda-forge
+conda install -c zhenlisme HELIANO -c bioconda -c conda-forge
 conda deactivate
 ```
 ## mamba
 ```
-#create the hela environment
-mamba create -n hela
-#activate the hela environment
-mamba activate hela
+#create the HELIANO environment
+mamba create -n HELIANO
+#activate the HELIANO environment
+mamba activate HELIANO
 # install 
-mamba install -c zhenlisme hela -c bioconda -c conda-forge
+mamba install -c zhenlisme HELIANO -c bioconda -c conda-forge
 mamba deactivate
 ```
 ## manual installation
 Before installation , you need to be sure that all dependencies have been installed in your computer and their pathes have been added into your environmental variables. All dependencies could be installed via conda/mamba.  
-1. download the latest hela package.  
-`git clone https://github.com/Zhenlisme/HELA.git`
+1. download the latest HELIANO package.  
+`git clone https://github.com/Zhenlisme/HELIANO.git`
 2. switch to the source code dorectory that you cloned at the last step.  
-   `cd HELA/`  
+   `cd HELIANO/`  
 3. run configure file.  
    `bash configure.sh`
-4. You can find HELA in bin/ directory.
+4. You can find HELIANO in bin/ directory.
 # Usage
-### 1. Activate the hela conda environment (for conda/mamba installation)  
-`conda activate hela`  
-### 2. Check the HELA binary  
-`HELA -h`
+### 1. Activate the HELIANO conda environment (for conda/mamba installation)  
+`conda activate HELIANO`  
+### 2. Check the HELIANO binary  
+`HELIANO -h`
 ```
-usage: HELA [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR [-n PROCESS] [-v]
+usage: HELIANO [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR [-n PROCESS] [-v]
 
-HELA can detect and classify different variants of Helitron-like elements: Helitron, Helentron and Helitron2. Please visit https://github.com/Zhenlisme/HELA/ for more information. Email us:
+HELIANO can detect and classify different variants of Helitron-like elements: Helitron, Helentron and Helitron2. Please visit https://github.com/Zhenlisme/HELIANO/ for more information. Email us:
 zhen.li3@universite-paris-saclay.fr
 
 optional arguments:
@@ -93,9 +93,9 @@ optional arguments:
                         Maximum of threads to be used.
   -v, --version         show program's version number and exit
 ```
-### 3. Perform a test run of HELA  
-##### Here we will use the genome of Xenopus tropicalis as an example (You can download it here https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/004/195/GCF_000004195.4_UCB_Xtro_10.0/GCF_000004195.4_UCB_Xtro_10.0_genomic.fna.gz). Perform the following code. (note: the `genome.fa` is the only input which is the genome file of Xenopus tropicalis in fasta format. The main result could be found in file **RC.representative.bed** in **HELA_opt** directory.)   
-`HELA -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELA_opt`  
+### 3. Perform a test run of HELIANO  
+##### Here we will use the genome of Xenopus tropicalis as an example (You can download it here https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/004/195/GCF_000004195.4_UCB_Xtro_10.0/GCF_000004195.4_UCB_Xtro_10.0_genomic.fna.gz). Perform the following code. (note: the `genome.fa` is the only input which is the genome file of Xenopus tropicalis in fasta format. The main result could be found in file **RC.representative.bed** in **HELIANO_opt** directory.)   
+`HELIANO -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELIANO_opt`  
 ##### Explanation for RC.representative.bed
 There are 11 columns in RC.representative.bed file:  
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
