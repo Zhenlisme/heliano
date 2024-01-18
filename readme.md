@@ -29,6 +29,22 @@ Helitron-like elements (Helitron, Helentron and Helitron2) belong the class 2 tr
 - rnabob = 2.2.1
 ```
 # Installation
+## mamba (Recommendation)
+If you don't have a mamba, you can install it with the following commands easily.
+```
+wget "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh"
+bash Mambaforge-$(uname)-$(uname -m).sh -b
+```
+Then you can install HELIANO with mamba.
+```
+#create the HELIANO environment
+mamba create -n HELIANO
+#activate the HELIANO environment
+mamba activate HELIANO
+# install 
+mamba install zhenlisme::HELIANO -c bioconda -c conda-forge
+mamba deactivate
+```
 ## conda
 ```
 #create the HELIANO environment
@@ -36,18 +52,8 @@ conda create -n HELIANO
 #activate the HELIANO environment
 conda activate HELIANO
 # installation 
-conda install -c zhenlisme HELIANO -c bioconda -c conda-forge
+conda install zhenlisme::HELIANO -c bioconda -c conda-forge
 conda deactivate
-```
-## mamba
-```
-#create the HELIANO environment
-mamba create -n HELIANO
-#activate the HELIANO environment
-mamba activate HELIANO
-# install 
-mamba install -c zhenlisme HELIANO -c bioconda -c conda-forge
-mamba deactivate
 ```
 ## manual installation
 Before installation , you need to be sure that all dependencies have been installed in your computer and their pathes have been added into your environmental variables. All dependencies could be installed via conda/mamba.  
@@ -95,7 +101,13 @@ optional arguments:
 ```
 ### 3. Perform a test run of HELIANO  
 ##### Here we will use the genome of Xenopus tropicalis as an example (You can download it here https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/004/195/GCF_000004195.4_UCB_Xtro_10.0/GCF_000004195.4_UCB_Xtro_10.0_genomic.fna.gz). Perform the following code. (note: the `genome.fa` is the only input which is the genome file of Xenopus tropicalis in fasta format. The main result could be found in file **RC.representative.bed** in **HELIANO_opt** directory.)   
-`HELIANO -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELIANO_opt`  
+`heliano -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELIANO_opt`
+### 4. HELIANO outputs
+You will find two main files if program runs successfully.
+1. RC.representative.bed: the predicted Helitron/Helentron coordinations.
+2. RC.representative.fa: the predicted Helitron/Helentron sequences in fasta format.
+Notice: the two files will be empty if no Helitron/Helentron detected by HELIANO program.
+
 ##### Explanation for RC.representative.bed
 There are 11 columns in RC.representative.bed file:  
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
