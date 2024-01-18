@@ -126,7 +126,7 @@ There are 11 columns in RC.representative.bed file:
 |stop|stop site of HLE|
 |subfamily|heliano classification|
 |occurence|how often this subfamily occurred in genome|
-|strand|strand|
+|strand|the insertion is on which strand|
 |pvalue|pvalue of fisher's exact test, indicating the significance of the prediction. The lower, the more significant.|
 |TS_blastn_identity|the average identity of RTS and LTS to their representative counterparts|
 |variant|the insertion is Helitron or Helentron|
