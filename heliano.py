@@ -116,7 +116,6 @@ class Structure_search:
                  '-similar', str(Args.simtir), '-mintirdist', str(mintirdist), '-maxtirdist', str(maxtirdist), '-mintsd', '0',
                  '-seed', str(seed), '-vic', '1', '-overlaps', 'all', '-xdrop', '0'], stderr=subprocess.DEVNULL, stdout=invf)
             runinvsearch.wait()
-
         invt_list = []
         ## The default output is in gff format, extract coord information and do filteration.
         with open(invttirfile, 'r') as F:
@@ -142,8 +141,8 @@ class Structure_search:
                         right_end = str(int(splitlines[4]) + self.START)
                         right_expand = '-'.join([right_start, right_end])
                         invt_length_right = int(splitlines[4]) - int(splitlines[3]) + 1
-                        ## length of inverted sequences should be greater than 11 and shorter than 16
-                        if invt_length_left >= 12 and invt_length_right >= 12 and invt_length_left <= 15 and invt_length_right <= 15:
+                        ## length of inverted sequences should be greater than 11 and shorter than 18
+                        if invt_length_left >= 12 and invt_length_right >= 12 and invt_length_left <= 17 and invt_length_right <= 17:
                             invt_list.append([chrmid, str(left_start), str(right_end), left_expand, right_expand,
                                               (invt_length_right + invt_length_left) / 2, sim])
 
@@ -169,14 +168,12 @@ class Homologous_search:
         with open(headerfile, 'r') as F:
             headerpattern_list = F.read().rstrip().split('\n')
             self.headerpattern = '|'.join(headerpattern_list) if not Args.IS1 else '|'.join([''.join(['A', i]) for i in headerpattern_list])
+            #self.headerpattern = ''.join(['(?=(', self.headerpattern, '))'])
         if not os.path.exists(self.wkdir):
             os.mkdir(self.wkdir)
             os.chdir(self.wkdir)
         else:
             os.chdir(self.wkdir)
-            
-        if not os.path.exists("LTS_RTS"):
-            os.mkdir("LTS_RTS")
             
         self.bedtoolstmp = os.path.abspath('BedtoolsTMP')
         if not os.path.exists(self.bedtoolstmp):
@@ -386,6 +383,7 @@ class Homologous_search:
     def heltentron_terminal(self, helentron_bed):
         # Define function to try to recover Helentron terminal region (stem-loop structure) which is behind the right part of TIRs
         extend_seq = []
+        opbed_list = []
         extend_file = ''.join([helentron_bed, '.fa'])
         extend_dict = {}
         extend_dict = defaultdict(list)
@@ -394,15 +392,21 @@ class Homologous_search:
         with open(helentron_bed, 'r') as F:
             for line in F:
                 feature = line.rstrip().split('\t')
-                chrmid, start, stop, name, score, strand, pvalue, Bscore = feature
+                chrmid, start, stop, name, score, strand, pvalue, Bscore, classname, mobile_type, insertion_name = feature
                 start, stop = int(start), int(stop)
                 if float(Bscore) == 0:  ## without terminal signals
-                    opbed_list.append([chrmid, start, stop, name, score, strand, pvalue, Bscore])
+                    opbed_list.append([chrmid, str(start), str(stop), name, score, strand, pvalue, Bscore, classname, mobile_type, insertion_name])
                     continue
 
                 if strand == '+':
                     extend_id = '-'.join([chrmid, str(start), str(stop), 'p'])
-                    detect_seq = str(self.genome_dict[chrmid][stop: stop + 80])
+                    if '.2' not in classname:
+                        detect_seq = str(self.genome_dict[chrmid][stop: stop + 80])
+                        StemStart = stop
+                    else:  ## Helentron.2, the stem loop is at 5'end
+                        terminal_start = 0 if start - 80 < 0 else start - 80
+                        detect_seq = str(self.genome_dict[chrmid][terminal_start: start])
+                        StemStart = terminal_start
                     ## To remove short seequence
                     if len(detect_seq) < 17:
                         continue
@@ -410,13 +414,19 @@ class Homologous_search:
                     N_count = detect_seq.count('N')
                     if N_count >= 5:
                         continue
+                    ## The last element is the initial start for terminal detection region
                     extend_dict[extend_id].append([chrmid, str(start), str(stop), name, score, strand, pvalue, Bscore,
-                                              stop])  ## The last element is the initial start for terminal detection region
+                                              classname, mobile_type, insertion_name, StemStart])
                     extend_seq.append(''.join(['>', extend_id, '\n', detect_seq, '\n']))
                 else:
                     extend_id = '-'.join([chrmid, str(start), str(stop), 'n'])
-                    terminal_start = 0 if start - 80 < 0 else start - 80
-                    detect_seq = str(self.genome_dict[chrmid][terminal_start: start])
+                    if '.2' not in classname:
+                        terminal_start = 0 if start - 80 < 0 else start - 80
+                        detect_seq = str(self.genome_dict[chrmid][terminal_start: start])
+                        StemStart = terminal_start
+                    else:  ## Helentron.2, the stem loop is at 3'end
+                        detect_seq = str(self.genome_dict[chrmid][stop: stop + 80])
+                        StemStart = stop
                     ## To remove short seequence
                     if len(detect_seq) < 17:
                         continue
@@ -424,8 +434,9 @@ class Homologous_search:
                     N_count = detect_seq.count('N')
                     if N_count >= 5:
                         continue
+                    ## The last element is the initial start for terminal detection region
                     extend_dict[extend_id].append([chrmid, str(start), str(stop), name, score, strand, pvalue, Bscore,
-                                              terminal_start])  ## The last element is the initial start for terminal detection region
+                                              classname, mobile_type, insertion_name, StemStart])
                     extend_seq.append(''.join(['>', extend_id, '\n', detect_seq, '\n']))
         if not extend_seq:  ## means empty
             return helentron_bed
@@ -436,37 +447,56 @@ class Homologous_search:
         stem_loop_dict = defaultdict(list)
         [stem_loop_dict[i[0]].append(i) for i in stem_loop_list]
 
-        opbed_list = []
         ## To select the nearest candidate
         for extend_id in stem_loop_dict:
             for sublist in extend_dict[extend_id]:
-                chrmid, start, stop, name, score, strand, pvalue, Bscore, e_start = sublist
+                chrmid, start, stop, name, score, strand, pvalue, Bscore, classname, mobile_type, insertion_name, e_start = sublist
                 if extend_id.endswith('p'):
                     stem_loop = [i for i in stem_loop_dict[extend_id] if i[5] == '+']
                     ## order by start position (closer), stem length (longer), loop length (shorter),  total length (shorter)
-                    stem_loop = sorted(stem_loop, key = lambda x: [x[0], int(x[1]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
+                    if classname == 'Helentron':
+                        stem_loop = sorted(stem_loop, key = lambda x: [x[0], int(x[1]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
+                        if stem_loop:
+                            stem_start, stem_stop = stem_loop[0][1:3]
+                            stem_stop = int(stem_stop) + int(e_start)
+                            opbed_list.append([chrmid, start, str(stem_stop), name, score, strand,
+                                               pvalue, Bscore, classname, mobile_type, insertion_name])
+                    else:
+                        stem_loop = sorted(stem_loop, key=lambda x: [x[0], -int(x[2]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
+                        if stem_loop:
+                            stem_start, stem_stop = stem_loop[0][1:3]
+                            stem_start = int(stem_start) + int(e_start)
+                            opbed_list.append([chrmid, str(stem_start), stop, name, score, strand,
+                                               pvalue, Bscore, classname, mobile_type, insertion_name])
                     if not stem_loop:
-                        opbed_list.append([chrmid, start, stop, name, score, strand, pvalue, Bscore])
+                        opbed_list.append([chrmid, start, stop, name, score, strand, pvalue, Bscore, classname, mobile_type, insertion_name])
                         continue
-                    stem_start, stem_stop = stem_loop[0][1:3]
-                    stem_stop = int(stem_stop) + int(e_start)
-                    opbed_list.append([chrmid, start, str(stem_stop), name, score, strand, pvalue, Bscore])
                 else:
                     stem_loop = [i for i in stem_loop_dict[extend_id] if i[5] == '-']
                     ## order by end position (longer), stem length (longer), loop length (shorter), total length (shorter)
-                    stem_loop = sorted(stem_loop, key=lambda x: [x[0], -int(x[2]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
+                    if classname == 'Helentron':
+                        stem_loop = sorted(stem_loop, key=lambda x: [x[0], -int(x[2]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
+                        if stem_loop:
+                            stem_start, stem_stop = stem_loop[0][1:3]
+                            stem_start = int(stem_start) + int(e_start)
+                            opbed_list.append([chrmid, str(stem_start), stop, name, score, strand,
+                                               pvalue, Bscore, classname, mobile_type, insertion_name])
+                    else:
+                        stem_loop = sorted(stem_loop, key=lambda x: [x[0], int(x[1]), -int(x[3]), int(x[4]),
+                                                                     int(x[2]) - int(x[1])])
+                        if stem_loop:
+                            stem_start, stem_stop = stem_loop[0][1:3]
+                            stem_stop = int(stem_stop) + int(e_start)
+                            opbed_list.append([chrmid, start, str(stem_stop), name, score, strand,
+                                               pvalue, Bscore, classname, mobile_type, insertion_name])
                     if not stem_loop:
-                        opbed_list.append([chrmid, start, stop, name, score, strand, pvalue, Bscore])
+                        opbed_list.append([chrmid, start, stop, name, score, strand, pvalue, Bscore, classname, mobile_type, insertion_name])
                         continue
-                    stem_start, stem_stop = stem_loop[0][1:3]
-                    stem_start = int(stem_start) + int(e_start)
-                    opbed_list.append([chrmid, str(stem_start), stop, name, score, strand, pvalue, Bscore])
-
         ### To complement the candidates whose stem loop signal doesn't exist.
         remained_cases = set(extend_dict.keys()) - set(stem_loop_dict.keys())
         for key in remained_cases:
             for sublist in extend_dict[key]:
-                opbed_list.append(sublist[:8])
+                opbed_list.append(sublist[:11])
         ### To creat bedtools objective
         #opbed = BT.BedTool([BT.create_interval_from_list(line) for line in opbed_list])
         with open(helentron_bed, 'w') as F:
@@ -568,7 +598,6 @@ class Homologous_search:
                 # Size of terminal inverted sequences should be less than the size of extension
                 max_dist_tir = 2 * int(self.window) + ORF_stop - ORF_start
 
-                ## The expected length of helentron/helitron2 should be from 12 to 15, set the maximum length to 20 and exclude the long tir (>15 nt) after.
                 invt_list = Structure_search(genome=expansion_all_seqname, START=left_boundary - 1).inverted_detection(
                     expansion_all_seqname, 9, 20, mini_dist_tir, max_dist_tir, 8)
                 ## To keep the case that fully covered with ORF region
@@ -643,7 +672,7 @@ class Homologous_search:
         with open(cluster_file, 'w') as F:
             F.writelines(["".join([k, "\t", cluster_dict[k], '\n']) for k in cluster_dict])
         return cluster_dict
-
+    
     def split_list(self, numbers, num_groups):
         # Calculate target sum for each group
         total_sum = sum([i[1] for i in numbers])
@@ -793,10 +822,13 @@ class Homologous_search:
         if os.path.exists(blastn_opt):
             os.remove(blastn_opt)
 
-    def merge_overlaped_intervals(self, bedinput, represent_bed, alternative_bed):
-        # To merge overlaped candidates
-        with open(bedinput, 'r') as RF, open(alternative_bed, 'a') as WFa, open(represent_bed, 'a') as WFr:
+    def merge_overlaped_intervals(self, bedinput, represent_bed):
+        # To merge overlaped nonautonomous candidates
+        True_pair_list = []
+        with open(bedinput, 'r') as RF, open(represent_bed, 'a') as WFr:
             compared_line =  RF.readline().rstrip().split('\t')
+            if len(compared_line) <= 1:
+                return {}
             chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type = compared_line
             alternative_bedlines = [compared_line]
             compared_line = (chrmid, start, stop, strand)
@@ -817,13 +849,13 @@ class Homologous_search:
                     output_recorder[block_name]=1
                     ## Begin to output the former to alternative file
                     [i.append(block_name) for i in alternative_bedlines]
-                    WFa.write('\n'.join(['\t'.join(i) for i in alternative_bedlines]))
-                    WFa.write('\n')
                     ## Try to select a representative from these alternatives.
-                    RC_list = self.filter(alternative_bedlines)
+                    RC_list = self.filter(alternative_bedlines, classname=classname, mobile_type=mobile_type)
                     if RC_list:
-                        WFr.write('\n'.join(['\t'.join(line) for line in RC_list]))
-                        WFr.write('\n')
+                        for line in RC_list:
+                            WFr.write('\t'.join(line))
+                            WFr.write('\n')
+                            True_pair_list.append(line[3])
 
                     blockname_init += 1
                     alternative_bedlines = [newline]
@@ -833,12 +865,56 @@ class Homologous_search:
             block_name = '_'.join(['insertion', classname, mobile_type, str(blockname_init)])
             if block_name not in output_recorder:
                 [i.append(block_name) for i in alternative_bedlines]
-                WFa.write('\n'.join(['\t'.join(i) for i in alternative_bedlines]))
-                WFa.write('\n')
-                RC_list = self.filter(alternative_bedlines)
+                RC_list = self.filter(alternative_bedlines, classname=classname, mobile_type=mobile_type)
                 if RC_list:
-                    WFr.write('\n'.join(['\t'.join(line) for line in RC_list]))
-                    WFr.write('\n')
+                    for line in RC_list:
+                        WFr.write('\t'.join(line))
+                        WFr.write('\n')
+                        True_pair_list.append(line[3])
+        return set(True_pair_list)
+
+    def merge_overlaped_autos(self, bedinput, represent_bed):
+        True_pair_list = []
+        with open(bedinput, 'r') as RF, open(represent_bed, 'a') as WF:
+            splitlines = RF.readline().rstrip().split('\t')
+            if len(splitlines) <= 1:
+                return {}
+            chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type = splitlines[6:16]
+            last_orfid = splitlines[3]
+            alternative_bedlines = [splitlines[6:16]]
+            blockname_init = 1
+            output_recorder = {}
+            for line in RF:
+                splitlines = line.rstrip().split('\t')
+                orfid = splitlines[3]
+                if orfid == last_orfid:
+                    alternative_bedlines.append(splitlines[6:16])
+                else:
+                    block_name = '_'.join(['insertion', classname, mobile_type, str(blockname_init)])
+                    output_recorder[block_name] = 1
+                    ## Begin to output the former to alternative file
+                    [i.append(block_name) for i in alternative_bedlines]
+                    ## Try to select a representative from these alternatives.
+                    RC_list = self.filter(alternative_bedlines, classname=classname, mobile_type=mobile_type)
+                    if RC_list:
+                        for line in RC_list:
+                            WF.write('\t'.join(line))
+                            WF.write('\n')
+                            True_pair_list.append(line[3])
+                    blockname_init += 1
+                    last_orfid = orfid
+                    alternative_bedlines = [splitlines[6:16]]
+            ## in case the last overlaped series not saved.
+            block_name = '_'.join(['insertion', classname, mobile_type, str(blockname_init)])
+            if block_name not in output_recorder:
+                [i.append(block_name) for i in alternative_bedlines]
+                RC_list = self.filter(alternative_bedlines, classname=classname, mobile_type=mobile_type)
+                if RC_list:
+                    for line in RC_list:
+                        WF.write('\t'.join(line))
+                        WF.write('\n')
+                        True_pair_list.append(line[3])
+        return set(True_pair_list)
 
     def prepare_terminal_seq(self, Helitron_list, pair=False, classname='Helitron'):
         if not os.path.exists(classname):
@@ -914,10 +990,6 @@ class Homologous_search:
         left_cluster_dict = self.cdhitest_clust(left_ter_file, left_ter_reduce_file, helitron_type=''.join([classname, '_left']), id=0.9)
         right_cluster_dict = self.cdhitest_clust(right_ter_file, right_ter_reduce_file, helitron_type=''.join([classname, '_right']), id=0.9)
         
-        ## To backup reduced files
-        shutil.copy(left_ter_reduce_file, '../LTS_RTS/')
-        shutil.copy(right_ter_reduce_file, '../LTS_RTS/')
-        
         ## To make left-right pairs
         combinid_file = '%s.combinid.txt' % classname
         if pair:
@@ -952,8 +1024,7 @@ class Homologous_search:
                 for left in left_reduced_list:
                     for right in right_cluster_dict:
                         F.write(''.join([left, '\t', right, '\n']))
-        shutil.copy(combinid_file, '../LTS_RTS/')
-	
+
         ## To evaluate the size range
         max_orf_length = sorted(ORF_length_list)[-1]
         distance_na = int(self.window) * 2 + max_orf_length
@@ -1001,15 +1072,6 @@ class Homologous_search:
             exit(0)
 
         FisherBed_files = ['/'.join([bed_optdir, file]) for file in os.listdir(bed_optdir)]
-        
-        ## To add terminal sequences for Helentron
-        if classname != 'Helitron' and FisherBed_files:
-            planpool = ThreadPool(int(self.process_num))
-            #planpool = Pool(int(self.process_num))
-            for fisherfile in FisherBed_files:
-                planpool.apply_async(self.heltentron_terminal, args=(fisherfile,))
-            planpool.close()
-            planpool.join()
 
         ## To merge and sort all Fisher bed files
         fisher_pvalue_file = '%s.joint.pvalue.bed' % classname
@@ -1031,47 +1093,41 @@ class Homologous_search:
 
         #############To annotate auto or non-autonomous ############
         ORF_bed = BT.BedTool(ORF_bedfile)
-
         ## To get autonomous candidates.
         fisher_pvalue_bed = BT.BedTool(fisher_pvalue_file)
-
         ## candidates whose significant terminal signals are able to be found.
-        orf_fisher_bed = fisher_pvalue_bed.intersect(ORF_bed, nonamecheck=True, F=1, wa=True, s=True).saveas('Fisher_with_ORF.bed')
-
-        ## candidates whose significant terminal signals are unable to be found.
-        ORF_without_ter_bed = ORF_bed.intersect(fisher_pvalue_bed, nonamecheck=True, v=True, s=True, wa=True).saveas('OnlyORF.bed')
-
-        ## To get non-autonomous candidates
-        non_autonomous_bed = fisher_pvalue_bed.intersect(ORF_bed, nonamecheck=True, F=0.5, wa=True, v=True).saveas('Nonauto.bed')
-        nonauto_alternative_file = ''.join([classname, '.nonauto.alternative.bed'])
-        with open(nonauto_alternative_file, 'w') as WF, open('Nonauto.bed', 'r') as RF:
-            for line in RF:
-                splitlines = line.rstrip().split('\t')
-                newline = '\t'.join([splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4],
-                                     splitlines[5], splitlines[6], splitlines[7], classname, 'nonauto'])
-                WF.write(newline)
-                WF.write('\n')
-            
-        ## To merge all autonomous insertions into one single file
+        orf_fisher_bed = fisher_pvalue_bed.intersect(ORF_bed, nonamecheck=True, F=1, wa=True, s=True, c=True).saveas('Fisher_with_ORF.bed')
+        ## To select the intervals that contain only one ORF
         auto_alternative_file = ''.join([classname, '.auto.alternative.bed'])
         with open(auto_alternative_file, 'w') as WF:
             with open('Fisher_with_ORF.bed', 'r') as f1:
-                initline = ''
                 for line in f1:
-                    if line != initline:
+                    splitlines = line.rstrip().split('\t')
+                    if int(splitlines[-1])==1:
                         splitlines = line.rstrip().split('\t')
-                        newline = '\t'.join([splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4], splitlines[5], splitlines[6], splitlines[7], classname, 'auto'])
+                        newline = '\t'.join(
+                            [splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4], splitlines[5],
+                             splitlines[6], splitlines[7], classname, 'auto'])
                         WF.write(newline)
                         WF.write('\n')
-                        initline = line
+
+        ## To get non-autonomous candidates
+        non_autonomous_bed = fisher_pvalue_bed.intersect(ORF_bed, nonamecheck=True, F=0.5, wa=True, v=True).saveas('Nonauto.bed')
+        ## candidates whose significant terminal signals are unable to be found.
+        auto_alternative_bed = BT.BedTool(auto_alternative_file)
+        ORF_without_ter_bed = ORF_bed.intersect(auto_alternative_bed, nonamecheck=True, v=True, s=True, wa=True).saveas('OnlyORF.bed')
         orf_alternative_file = ''.join([classname, '.orfonly.alternative.bed'])
         with open(orf_alternative_file, 'w') as WF:
             with open('OnlyORF.bed', 'r') as f2:
+                init = 1
                 for line in f2:
                     line = line.rstrip().split('\t')
-                    newline = '\t'.join([line[0], line[1], line[2], line[3], '1', line[5], '1', '0', classname, 'orf_only'])
+                    name = ''.join(['insertion_', classname, '_orfonly_', str(init)])
+                    newline = '\t'.join(
+                        [line[0], line[1], line[2], line[3], '1', line[5], '1', '0', classname, 'orfonly', name])
                     WF.write(newline)
                     WF.write('\n')
+                    init += 1
         os.chdir('../')
 
     def malign(self, fafile):
@@ -1086,6 +1142,7 @@ class Homologous_search:
         pairname = os.path.basename(fisherfile).replace('.bed', '')
         left_extend_file = ''.join([subwkdir, '/', pairname, '.left.fa'])
         right_extend_file = ''.join([subwkdir, '/', pairname, '.right.fa'])
+        terminal_file = ''.join([subwkdir, '/', pairname, '.terminal'])
 
         candidate_bed = BT.BedTool(fisherfile).sort()
         candidate_bed = candidate_bed.merge(d=100, c='4,5,6', o='first,mean,first')
@@ -1095,11 +1152,20 @@ class Homologous_search:
 
         self.filepath_list.append(left_extend_file)
         self.filepath_list.append(right_extend_file)
+        self.filepath_list.append(terminal_file)
 
         selected_list = candidate_list[:20]
-        with open(left_extend_file, 'w') as LF, open(right_extend_file, 'w') as RF:
+        with open(left_extend_file, 'w') as LF, open(right_extend_file, 'w') as RF, open(terminal_file, 'w') as TF:
             for line in selected_list:
                 chrmid, start, stop, name, score, strand = line
+                TF.write(''.join(['>', chrmid, '-', str(start), '-', str(stop), strand.replace('-', '-n').replace('+', '-p'), '\n']))
+                if int(stop) - int(start) > 200:
+                    left_terminal_seq = str(self.genome_dict[chrmid][int(start):int(start)+100])
+                    right_terminal_seq = str(self.genome_dict[chrmid][int(stop) -100:int(stop)])
+                    TF.write(''.join([left_terminal_seq, 'N'*10, right_terminal_seq, '\n']))
+                else:
+                    TF.write(''.join([str(self.genome_dict[chrmid][int(start):int(stop)]), '\n']))
+
                 if strand == '+':
                     if int(start) - 50 >= 0:
                         seq_stop = int(start)
@@ -1132,6 +1198,53 @@ class Homologous_search:
                         RF.write(str(seq))
                         RF.write('\n')
 
+    def TIR_denection(self, sequencefile):
+        sequence_length_dict = SeqIO.parse(sequencefile, 'fasta')
+        sequence_length_dict = {k.id: len(k.seq) for k in sequence_length_dict}
+        Terminal_dict = defaultdict(lambda :0)
+        pairname = os.path.basename(sequencefile).replace('.terminal', '')
+        ## start coord is 1 not 0
+        dbname = ''.join([os.path.basename(sequencefile), '.invdb'])
+        invttirfile = ''.join([os.path.basename(sequencefile), '.inv.txt'])
+        ## build database
+        mkinvdb = subprocess.Popen(
+            ['gt', 'suffixerator', '-db', sequencefile, '-indexname', dbname, '-mirrored', '-dna', '-suf', '-lcp', '-bck'],
+            stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        mkinvdb.wait()
+        ## run tirvish
+        with open(invttirfile, 'w') as invf:
+            runinvsearch = subprocess.Popen(['gt', 'tirvish', '-index', dbname, '-mintirlen', '20', '-maxtirlen', '150',
+                                             '-similar', '85', '-mintirdist', '2', '-maxtirdist', '200', '-mintsd', '0',
+                                             '-seed', '12', '-vic', '1', '-overlaps', 'all', '-xdrop', '0'],
+                                            stderr=subprocess.DEVNULL, stdout=invf)
+            runinvsearch.wait()
+
+        ## The default output is in gff format, extract coord information and do filteration.
+        with open(invttirfile, 'r') as F:
+            for line in F:
+                if line.startswith('#'):
+                    continue
+                splitlines = line.rstrip().split('\t')
+                if splitlines[2] == 'repeat_region':
+                    chrmid = splitlines[0]
+                    id = splitlines[8].replace('ID=', '')
+                    t = 1
+                elif splitlines[2] == 'terminal_inverted_repeat':
+                    if t == 1:
+                        left_start = str(int(splitlines[3]))
+                        t += 1
+                    else:
+                        right_end = str(int(splitlines[4]))
+                        if self.intersect([1, int(sequence_length_dict[chrmid])], [left_start, right_end], lportion=0.7):
+                            ## means long terminal inverted repeats detected
+                            Terminal_dict[chrmid]+=1
+
+        os.remove(invttirfile)
+        os.system('rm %s*' % dbname)
+        Inv_count = len([i for i in Terminal_dict if Terminal_dict[i]>0])
+        Total_num = len(sequence_length_dict.keys())
+        self.Terminal_dict[pairname]=Inv_count/Total_num
+
     def MakeSelection(self, FisherFile_pathlist):
         # This function is to filter out the candidates who might insert into other superfamily of transposons. 
         sys.stdout.write('Begin to run boundary check program.\n')
@@ -1143,16 +1256,15 @@ class Homologous_search:
             os.mkdir(subwkdir)
         ## To output the flanking sequences
         self.filepath_list = []
+
         planpool = ThreadPool(self.process_num)
-        #planpool = Pool(int(self.process_num))
         for fisherfile in FisherFile_pathlist:
             planpool.apply_async(self.flanking_seq, args=(fisherfile,))
         planpool.close()
         planpool.join()
-        filepath_list = [i for i in self.filepath_list if os.path.getsize(i)]
+        filepath_list = [i for i in self.filepath_list if os.path.getsize(i) and i.endswith('.fa')]
         planpool = ThreadPool(self.process_num)
-        #processnum = self.process_num if self.cpu_count > self.process_num else self.cpu_count
-        #planpool = Pool(processnum)
+
         for fafile in filepath_list:
             planpool.apply_async(self.malign, args=(fafile,))
         planpool.close()
@@ -1165,46 +1277,96 @@ class Homologous_search:
         sys.stdout.write("Boundary check was finished!\n")
 
         ## insertions that only contain orf regions will automatically pass this filter
-        name_iden_dict = defaultdict(lambda :defaultdict(lambda :1))
+
         if os.path.exists(boundary_identity_tbl):
             with open(boundary_identity_tbl, 'r') as F:
                 F.readline() ## Skip header
                 for line in F:
                     name, direction, iden = line.rstrip().split('\t')
-                    name_iden_dict[name][direction] = float(iden)
-        return name_iden_dict
+                    self.Boundary_iden_dict[name][direction] = float(iden)
 
-    def filter(self, alternative_list):
+        ## To filter out the candidates who might contain long tirs.
+        terminal_file_list = [i for i in self.filepath_list if os.path.getsize(i) and i.endswith('.terminal')]
+        planpool = ThreadPool(self.process_num)
+        for terminal_file in terminal_file_list:
+            planpool.apply_async(self.TIR_denection, args=(terminal_file,))
+        planpool.close()
+        planpool.join()
+        sys.stdout.write("Inverted repeats detection was finished!\n")
+
+    def filter(self, alternative_list, classname, mobile_type):
         ## To do selection for autonomous firstly, because the nonautonomous counterparts will be dertermined by autonomous ones.
         candidate_list = []
         RC_replist = []
-        for line in alternative_list:
-            pairname = line[3]
-            classname= line[8]
-            ## insertions that only contain orf regions will automatically pass this filter, because by default value is 0.
-            if self.Boundary_iden_dict[pairname]['left'] < 0.7:
-                if classname == 'Helitron':
-                    if self.Boundary_iden_dict[pairname]['right'] < 0.7:
-                        candidate_list.append(line)
-                else:  ## For helentron just detect the left side.
+        if classname == 'Helitron':
+            for line in alternative_list:
+                pairname = line[3]
+                ## insertions that only contain orf regions will automatically pass this filter, because default value is 0.
+                if self.Boundary_iden_dict[pairname]['left'] < 0.7 and self.Boundary_iden_dict[pairname]['right'] < 0.7:
                     candidate_list.append(line)
-        if not candidate_list and line[9] != 'nonauto':
-            candidate_list = alternative_list
-            ## Might represent a truncated helitron insertion. Just keep the autonomous ones and remove the nonautonomous ones.
-            ## Because we are sure that there should be one insertion in autonomous region.
-        candidate_list = sorted(candidate_list, key=lambda x:[float(x[6]), int(x[1])-int(x[2]), -float(x[7])])   ## pvalue, length, then bitscore
+        else: ## means Helentron
+            for line in alternative_list:
+                pairname = line[3]
+                left_iden, right_iden = self.Boundary_iden_dict[pairname]['left'], self.Boundary_iden_dict[pairname]['right']
+                if left_iden < 0.7:
+                    ## means regular Helentron, try to find stem-loop terminal markers at 5'end
+                    candidate_list.append(line)
+                elif right_iden < 0.7 and left_iden >= 0.7:
+                    ## unregular Helentron, try to find stem-loop terminal markers at 3'end
+                    line[-3] = ''.join([line[-3], '.2'])
+                    candidate_list.append(line)
+        if not candidate_list:
+            if mobile_type != 'nonauto':
+                ## Might represent a truncated helitron insertion. Just keep the autonomous ones and remove the nonautonomous ones.
+                ## Because we are sure that there should be one insertion in autonomous region.
+                candidate_list = sorted(alternative_list, key=lambda x: [int(x[2]) - int(x[1]), float(x[6]), -float(x[7])])  ## length (shorter), ## pvalue, then bitscore
+        else:
+            candidate_list = sorted(candidate_list, key=lambda x: [float(x[6]), int(x[1]) - int(x[2]), -float(x[7])])  ## pvalue, length, then bitscore
+        ## To further filter out TIRs
+        candidate_list2 = [i for i in candidate_list if self.Terminal_dict[i[3]] <= 0.2]
+        if candidate_list2:
+            candidate_list = candidate_list2
+        else:
+            if mobile_type == 'nonauto':
+                return []
         if candidate_list:
             RC_replist.append(candidate_list[0])
         return RC_replist
+
+    def OutputSequence(self, bedinput, faoutput):
+        with open(bedinput, 'r') as RF, open(faoutput, 'w') as WF:
+            for line in RF:
+                splitlines = line.rstrip().split('\t')
+                chrmid, start, stop, pairname, score, strand = splitlines[:6]
+                insertion_name = splitlines[-1]
+                start = int(start) - 1
+                start = 0 if start <0 else start
+                seq = self.genome_dict[chrmid][start:int(stop)]
+                if strand == '+':
+                    WF.write(''.join(['>', insertion_name, '\n']))
+                    WF.write(str(seq))
+                    WF.write('\n')
+                else:
+                    WF.write(''.join(['>', insertion_name, '\n']))
+                    WF.write(str(seq.reverse_complement()))
+                    WF.write('\n')
 
     def main(self):
         RC_total_candidate = self.autonomous_detect()
         RC_total_candidate_dict = defaultdict(list)
         [RC_total_candidate_dict[line[4]].append(line) for line in RC_total_candidate]
 
-        FisherFile_list = []
-        AlternativeFile_list = []
+        Repsentative_file_list = []
+        ## Loop for each variants.
         for class_name in RC_total_candidate_dict:
+            op_representative = '%s.representative.bed' % class_name
+            if os.path.exists(op_representative):
+                os.remove(op_representative)
+            Repsentative_file_list.append(op_representative)
+
+            FisherFile_list = []
+            Auto_file_list = []
+            ORFonly_file_list = []
             RC_list = RC_total_candidate_dict[class_name]
             if re.findall('Helentron', class_name):  ## need to pair the terminal repeats
                 self.prepare_terminal_seq(RC_list, pair=True, classname=class_name)
@@ -1217,26 +1379,63 @@ class Homologous_search:
             fisher_beddir = ''.join([class_name, '/', class_name, '_BedFisher'])
             if os.path.exists(fisher_beddir):
                 FisherFile_list.extend([''.join([fisher_beddir, '/', file]) for file in os.listdir(fisher_beddir)])
+                ## To check that if the boundary of each family can be well aligned.
+                ## To check that if the families contain long terminal inverted repeats.
+                self.Boundary_iden_dict = defaultdict(lambda: defaultdict(lambda: 1))
+                self.Terminal_dict = defaultdict(lambda :1)
+                self.MakeSelection(FisherFile_list)
+                with open('Boundary.tbl', 'a') as BF:
+                    for id in self.Boundary_iden_dict:
+                        for direction in self.Boundary_iden_dict[id]:
+                            BF.write(''.join([id, '\t', direction, '\t', str(self.Boundary_iden_dict[id][direction]), '\n']))
+                with open('TIR_count.tbl', 'a') as TF:
+                    for id in self.Terminal_dict:
+                        TF.write(''.join([id, '\t', str(self.Terminal_dict[id]), '\n']))
 
-            for file in os.listdir(class_name):
-                if file.endswith('alternative.bed'):
-                    file = ''.join([class_name, '/', file])
-                    if os.path.getsize(file):
-                        AlternativeFile_list.append(file)
+            ## To merge autonomous insertions and select representatives
+            Auto_fisher_file = ''.join([class_name, '/', '%s.auto.alternative.bed' % class_name])
+            Auto_fisher_bed = BT.BedTool(Auto_fisher_file)
+            ORF_bed = BT.BedTool(''.join([class_name, '/', class_name, '_orf.bed']))
+            Auto_ORF_intersect_file = ''.join([class_name, '/', class_name, 'ORFinterAUTO.bed'])
+            ORF_bed.intersect(Auto_fisher_bed, nonamecheck=True, f=1, wo=True, s=True).saveas(Auto_ORF_intersect_file)
+            pairnamelist = {}
+            if os.path.exists(Auto_fisher_file):
+                pairnamelist = self.merge_overlaped_autos(Auto_ORF_intersect_file, op_representative)
 
-        ## To check that if the boundary of each family can be well aligned.
-        self.Boundary_iden_dict = self.MakeSelection(FisherFile_list)
+            ## To get non-autonomous candidates
+            nonauto_bedfile = '%s/Nonauto.bed' % class_name
+            nonauto_alternative_file = ''.join([class_name, '/', class_name, '.nonauto.alternative.bed'])
+            if os.path.exists(nonauto_bedfile):
+                with open(nonauto_alternative_file, 'w') as WF, open(nonauto_bedfile, 'r') as RF:
+                    for line in RF:
+                        splitlines = line.rstrip().split('\t')
+                        if splitlines[3] in pairnamelist:
+                            newline = '\t'.join([splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4],
+                                                splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto'])
+                            WF.write(newline)
+                            WF.write('\n')
 
-        ## To merge insertions
+            ## To merge nonautonomous intervals and do selection.
+            if os.path.exists(nonauto_alternative_file):
+                self.merge_overlaped_intervals(nonauto_alternative_file, op_representative)
+
+            ## To integrate orf file into representative file
+            # To obtain orf only insertions
+            Orfonly_file = ''.join([class_name, '/', '%s.orfonly.alternative.bed' % class_name])
+            with open(op_representative, 'a') as WF, open(Orfonly_file, 'r') as RF:
+                WF.write(RF.read())
+
+        ## To add terminal markers for Helentrons
+        for helen_file in Repsentative_file_list:
+            if re.findall('Helentron', helen_file):
+                self.heltentron_terminal(helentron_bed=helen_file)
+
         op_representative = 'RC.representative.bed'
-        op_alternative = 'RC.alternative.bed'
-        if os.path.exists(op_representative):
-            os.remove(op_representative)
-        if os.path.exists(op_alternative):
-            os.remove(op_alternative)
-        ## To merge overlaps and select representatives
-        for alternative_file in AlternativeFile_list:
-            self.merge_overlaped_intervals(alternative_file, op_representative, op_alternative)
+        with open(op_representative, 'w') as wf:
+            for file in Repsentative_file_list:
+                with open(file, 'r') as rf:
+                    [wf.write(line) for line in rf]
+                os.remove(file)
 
         ## To sort big file
         if not os.path.exists(op_representative):
@@ -1250,6 +1449,8 @@ class Homologous_search:
         except:
             sys.stdout.write("Sort representative files failed ...\n")
             exit(0)
+        sequence_fa = 'RC.representative.fa'
+        self.OutputSequence(op_representative, sequence_fa)
         os.remove(self.CTRR_stem_loop_description)
         os.remove(self.subtir_description)
         os.remove(self.genome_size)
@@ -1258,12 +1459,13 @@ class Homologous_search:
             shutil.rmtree('GenomeDB')
         if os.path.exists('genomes'):
             shutil.rmtree('genomes')
-        for class_name in RC_total_candidate_dict:
-            if os.path.exists(class_name):
-                shutil.rmtree(class_name)
+        #for class_name in RC_total_candidate_dict:
+        #    if os.path.exists(class_name):
+        #       shutil.rmtree(class_name)
         if os.path.exists("boundary_align"):
             shutil.rmtree("boundary_align")
-
+        if os.path.exists('Boundary.identity.tbl'):
+            os.remove('Boundary.identity.tbl')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="heliano can detect and classify different variants of Helitron-like elements: Helitron, Helentron/Helitron2. Please visit https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr")
@@ -1285,7 +1487,7 @@ if __name__ == "__main__":
                         help="The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 100, default is 32.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.1')
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.2')
     Args = parser.parse_args()
     if int(Args.score) < 30 or int(Args.score) >= 55:
         print("The bitscore value should be greater than 30 and less than 55.")

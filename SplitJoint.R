@@ -52,14 +52,19 @@ parSapply(cl, left_bedfile_list, function(x){
   sub_leftbed = sub_leftbed[order(sub_leftbed$V1, sub_leftbed$V2), ]
   sub_leftbed = bt.merge(sub_leftbed, s=TRUE, d = 100, c="4,5,6", o="first,max,first")
   
-  ## To extend bed files
-  sub_leftbed$V3=ifelse(sub_leftbed$V6=='+', sub_leftbed$V2+HALF_DIST, sub_leftbed$V3)
-  sub_leftbed$V2=ifelse(sub_leftbed$V6=='+', sub_leftbed$V2, sub_leftbed$V3-HALF_DIST)
-  sub_leftbed$V2=ifelse(sub_leftbed$V2<=0, 1, sub_leftbed$V2)
-  colnames(sub_leftbed)=c('chrmid', 'start', 'stop', 'name', 'score', 'strand')
+  # To backup the real start point
+  sub_leftbed$bk=ifelse(sub_leftbed$V6=='+', sub_leftbed$V2, sub_leftbed$V3)
+  
+  ## To extend bed files, but remove the terminal region.
+  sub_leftbed$stop=ifelse(sub_leftbed$V6=='+', sub_leftbed$V3+HALF_DIST, sub_leftbed$V2)
+  sub_leftbed$start=ifelse(sub_leftbed$V6=='+', sub_leftbed$V3, sub_leftbed$V2-HALF_DIST)
+  sub_leftbed$start=ifelse(sub_leftbed$start<=0, 1, sub_leftbed$start)
+  sub_leftbed=sub_leftbed[, c('V1', 'start', 'stop', 'V4', 'V5', 'V6', 'bk')]
+  
+  colnames(sub_leftbed)=c('chrmid', 'start', 'stop', 'name', 'score', 'strand', 'bk')
   sub_leftbed = merge(sub_leftbed, genome_size_df)
   sub_leftbed$V3 = ifelse(sub_leftbed$stop <= sub_leftbed$length, sub_leftbed$stop, sub_leftbed$length)
-  sub_leftbed = sub_leftbed[, c('chrmid', 'start', 'stop', 'name', 'score', 'strand')]
+  sub_leftbed = sub_leftbed[, c('chrmid', 'start', 'stop', 'name', 'score', 'strand', 'bk')]
   ## To output
   bnm=basename(x)
   sub_leftfile = paste(left_flank_dir, '/', bnm, sep = '')
@@ -82,33 +87,62 @@ parSapply(cl, right_bedfile_list, function(x){
   ## To merge tandem repeats
   sub_rightbed = sub_rightbed[order(sub_rightbed$V1, sub_rightbed$V2), ]
   sub_rightbed = bt.merge(sub_rightbed, s=TRUE, d = 100, c="4,5,6", o="first,max,first")
-
-  ## To extend bed files
-  sub_rightbed$V3=ifelse(sub_rightbed$V6=='+', sub_rightbed$V3, sub_rightbed$V2+HALF_DIST)
-  sub_rightbed$V2=ifelse(sub_rightbed$V6=='+', sub_rightbed$V3-HALF_DIST, sub_rightbed$V2)
-  sub_rightbed$V2=ifelse(sub_rightbed$V2<=0, 1, sub_rightbed$V2)
-  colnames(sub_rightbed)=c('chrmid', 'start', 'stop', 'name', 'score', 'strand')
+  
+  # To backup the real start point
+  sub_rightbed$bk=ifelse(sub_rightbed$V6=='+', sub_rightbed$V3, sub_rightbed$V2)
+  
+  ## To extend bed files, but remove the original terminal regions
+  sub_rightbed$stop=ifelse(sub_rightbed$V6=='+', sub_rightbed$V2, sub_rightbed$V3+HALF_DIST)
+  sub_rightbed$start=ifelse(sub_rightbed$V6=='+', sub_rightbed$V2-HALF_DIST, sub_rightbed$V3)
+  sub_rightbed$start=ifelse(sub_rightbed$start<=0, 1, sub_rightbed$start)
+  sub_rightbed=sub_rightbed[, c('V1', 'start', 'stop', 'V4', 'V5', 'V6', 'bk')]
+  
+  colnames(sub_rightbed)=c('chrmid', 'start', 'stop', 'name', 'score', 'strand', 'bk')
   sub_rightbed = merge(sub_rightbed, genome_size_df, by='chrmid')
   sub_rightbed$stop = ifelse(sub_rightbed$stop <= sub_rightbed$length, sub_rightbed$stop, sub_rightbed$length)
   
   ## To output 
-  sub_rightbed = sub_rightbed[, c('chrmid', 'start', 'stop', 'name', 'score', 'strand')]
+  sub_rightbed = sub_rightbed[, c('chrmid', 'start', 'stop', 'name', 'score', 'strand', 'bk')]
   bnm=basename(x)
   sub_rightfile = paste(right_flank_dir, '/', bnm, sep = '')
   bt.sort(sub_rightbed, output = sub_rightfile)
 })
 stopCluster (cl)
-## To create file path file
+### To create file path file ####
 
 ## read combined id file
 leftname_list = sapply(left_bedfile_list, function(x){strsplit(basename(x), split = '\\.')[[1]][1]})
 rightname_list = sapply(right_bedfile_list, function(x){strsplit(basename(x), split = '\\.')[[1]][1]})
-
 combine_id=read.csv2(combinid_file, stringsAsFactors = F, header = F, sep = '\t')
 colnames(combine_id)=c('leftname', 'rightname')
 combine_id=combine_id[which(combine_id$leftname %in% leftname_list & combine_id$rightname %in% rightname_list), ]
+
+## To filter out pairs whose sequences are similar.
+cl = makeCluster(CPU_num)
+clusterExport(cl, c('bedtools_path', 'left_beddir', 'right_beddir'), envir = .GlobalEnv)
+clusterEvalQ(cl, list(library(bedtoolsr), options(bedtools.path = bedtools_path)))
+
+Overalp_df = parApply(cl, combine_id, MARGIN = 1, function(x){
+  left_file = paste(left_beddir, '/', x[1], '.bed', sep = '')
+  right_file = paste(right_beddir, '/', x[2], '.bed', sep = '')
+  left_bed = read.csv2(left_file, stringsAsFactors = F, header = F, sep = '\t')
+  right_bed = read.csv2(right_file, stringsAsFactors = F, header = F, sep = '\t')
+  intersection_df = bt.intersect(a=left_bed, b=right_bed, nonamecheck = FALSE, s=FALSE, f=0.8)
+  proportion = nrow(unique(intersection_df))/nrow(left_bed)
+  return(c(x[1], x[2], proportion))
+})
+
+stopCluster (cl)
+Overalp_df = t(Overalp_df)
+colnames(Overalp_df)=c('leftname', 'rightname', 'proportion')
+Overalp_df=as.data.frame(Overalp_df, stringsAsFactors = F)
+Overalp_df$proportion=as.numeric(Overalp_df$proportion)
+
+## select for the non-overlap pairs.
+combine_id = Overalp_df[which(Overalp_df$proportion <0.3), c(1, 2)]
 
 combine_id$leftname=paste(subed_dir, '/leftflank/', combine_id$leftname, '.bed',sep = '')
 combine_id$rightname=paste(subed_dir, '/rightflank/', combine_id$rightname, '.bed', sep = '')
 write.table(combine_id, file = paste(subed_dir, '/', 'left_right.path.join', sep = ''), 
             quote = F, sep="\t", col.names = F, row.names = F)
+

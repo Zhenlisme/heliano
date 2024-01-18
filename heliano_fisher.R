@@ -54,12 +54,12 @@ if(length(rownames(significance_df))){
     window_df = bt.intersect(a=left_bed, b=right_bed, nonamecheck = FALSE, s=TRUE, wo=TRUE)
     
     if(length(rownames(window_df))>0){
-      Start = ifelse(window_df$V12=='+', window_df$V2, window_df$V8)
-      Stop = ifelse(window_df$V12=='+', window_df$V9, window_df$V3)
-      name=paste(window_df$V4, window_df$V10, sep = '-')
-      Bitscore=(as.numeric(window_df$V5)+as.numeric(window_df$V11))/2
+      Start = ifelse(window_df$V6=='+', window_df$V7, window_df$V14)
+      Stop = ifelse(window_df$V6=='+', window_df$V14, window_df$V7)
+      name=paste(window_df$V4, window_df$V11, sep = '-')
+      Bitscore=(as.numeric(window_df$V5)+as.numeric(window_df$V12))/2
       window_df=data.frame(chrm=window_df$V1, start=Start, stop=Stop, 
-                           combiname=name, count=1, strand=window_df$V12, 
+                           combiname=name, count=1, strand=window_df$V6, 
                            pvalue=1, Bscore=Bitscore, stringsAsFactors=F)
       left_name = gsub('.bed', '', basename(x[1]))
       right_name = gsub('.bed', '', basename(x[2]))
@@ -76,6 +76,5 @@ if(length(rownames(significance_df))){
 
   stopCluster (cl)
   }
-
 
 

@@ -75,6 +75,12 @@ class Consensus_making:
                                               stdout=subprocess.DEVNULL)
             mul_aln_run.wait()
 
+            ## To remove non utf-8 codes
+            with open(subaln, 'rb') as F:
+                text = F.read().decode('utf-8', 'ignore')
+            with open(subaln, 'w') as F:
+                F.write(text)
+
             consensus_file = ''.join([submfa, '.con.fa'])
             consencus_task = subprocess.Popen(["cons", "-sequence", subaln, '-outseq', consensus_file],
                                               stdout = subprocess.DEVNULL)
@@ -164,7 +170,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--repsenbed", type=str, required=True, help="The representative bed file.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.1')
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.2')
     Args = parser.parse_args()
     makeconsenus = Consensus_making(os.path.abspath(Args.genome), os.path.abspath(Args.opdir), os.path.abspath(Args.repsenbed), Args.process)
     makeconsenus.main()
