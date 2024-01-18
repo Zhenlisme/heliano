@@ -103,7 +103,7 @@ optional arguments:
 ##### Here we will use the genome of Xenopus tropicalis as an example
 You can download it here:
 https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/004/195/GCF_000004195.4_UCB_Xtro_10.0/GCF_000004195.4_UCB_Xtro_10.0_genomic.fna.gz.
-Perform the following code. (note: the `genome.fa` is the only input that is the genome file of Xenopus tropicalis in fasta format. The main result could be found in file **RC.representative.bed** in **HELIANO_opt** directory.)   
+Perform the following code. 
 `heliano -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELIANO_opt`
 ### 4. HELIANO outputs
 You will find two main files if program runs successfully.
