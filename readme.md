@@ -129,8 +129,8 @@ There are 11 columns in RC.representative.bed file:
 |strand|strand|
 |pvalue|pvalue of fisher's exact test, indicating the significance of the prediction. The lower, the more significant.|
 |TS_blastn_identity|the average identity of RTS and LTS to their representative counterparts|
-|variant|Helitron/Helentron|
-|type|indicate the mobility of HLE, either autonomous or nonautonomous|
+|variant|the insertion is Helitron or Helentron|
+|type|the mobility of HLE, either autonomous (auto) or nonautonomous (nonauto)|
 |name|unique identifier for each insertion|
 
 # To contact us
