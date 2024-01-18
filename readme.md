@@ -119,6 +119,7 @@ There are 11 columns in RC.representative.bed file:
 |NC_030677.2|23640161|23640743|Helentron_left_73-Helentron_right_74|79|+|2.0432e-176|74.3|Helentron|nonauto|insertion_Helentron_nonauto_2|
 ......
 ##### Detailed explaination for each column.
+|Columns|Explaination|
 | ---- | ---- |
 |chrm-id|chromosome id|
 |start|start site of HLE|
