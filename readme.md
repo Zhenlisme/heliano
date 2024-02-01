@@ -104,8 +104,8 @@ optional arguments:
 Perform the following code:
 `heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000`
 ### 4. HELIANO outputs
-You will find two main files if program runs successfully.
-1. RC.representative.bed: the predicted Helitron/Helentron coordinations (saved as test.opt.tbl in this repository).
+You will find two main result files when HELIANO program runs successfully.
+1. RC.representative.bed: the predicted Helitron/Helentron coordinates in bed format (available in the file test.opt.tbl in this repository).
 2. RC.representative.fa: the predicted Helitron/Helentron sequences in fasta format.
 ##### Explanation for RC.representative.bed
 There are 11 columns in RC.representative.bed file:  
