@@ -1,5 +1,5 @@
 # HELIANO: A fast and accurate tool for detection of Helitron-like elements.
-Helitron-like elements (Helitron, Helentron and Helitron2) belong the class 2 transposons. They have been found in diverse species and seem to play significant roles in the evolution of host genomes. Although known for over twenty years, Helitron sequences are still challenging to identify. Here, we propose HELIANO (Helitron-like elements annotator) as an efficient solution for detecting Helitron-like elements.
+Helitron-like elements (Helitron, Helentron and Helitron2) are DNA transposons. They have been found in diverse species and seem to play significant roles in the evolution of host genomes. Although known for over twenty years, Helitron sequences are still challenging to identify. Here, we propose HELIANO (Helitron-like elements annotator) as an efficient solution for detecting Helitron-like elements.
 
 # Table of contents
 - [Dependencies](#dependencies)
