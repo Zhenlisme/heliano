@@ -1,0 +1,12 @@
+CP128282.1	53617	59046	Helentron_left_18-Helentron_right_18	7	-	6.3390e-07	60	Helentron	auto	insertion_Helentron_auto_1
+CP128282.1	83425	88824	Helentron_left_18-Helentron_right_18	7	-	6.3390e-07	60	Helentron	auto	insertion_Helentron_auto_2
+CP128282.1	94525	99924	Helentron_left_18-Helentron_right_18	7	+	6.3390e-07	60	Helentron	auto	insertion_Helentron_auto_3
+CP128282.1	306838	312276	Helentron_left_18-Helentron_right_18	7	+	6.3390e-07	60	Helentron	auto	insertion_Helentron_auto_4
+CP128282.1	665681	668554	Helentron_left_33-Helentron_right_32	3	-	1.3547e-05	60	Helentron	nonauto	insertion_Helentron_nonauto_1
+CP128282.1	668719	671599	Helentron_left_33-Helentron_right_32	3	+	1.3547e-05	60	Helentron	nonauto	insertion_Helentron_nonauto_2
+CP128282.1	855863	858738	Helentron_left_33-Helentron_right_32	3	+	1.3547e-05	60	Helentron	nonauto	insertion_Helentron_nonauto_3
+CP128282.1	855863	880806	Helentron_left_33-Helentron_right_32	3	+	1.3547e-05	60	Helentron	auto	insertion_Helentron_auto_5
+CP128282.1	926221	928267	CP128282.1-926221-928267	1	-	1	0	Helentron	orfonly	insertion_Helentron_orfonly_1
+CP128282.1	963556	968985	Helentron_left_18-Helentron_right_18	7	+	6.3390e-07	60	Helentron	auto	insertion_Helentron_auto_6
+CP128282.1	1107206	1112635	Helentron_left_18-Helentron_right_18	7	+	6.3390e-07	60	Helentron	auto	insertion_Helentron_auto_7
+CP128282.1	1259412	1264991	Helentron_left_18-Helentron_right_18	7	-	6.3390e-07	60	Helentron	auto	insertion_Helentron_auto_8
