@@ -30,7 +30,7 @@ Helitron-like elements (Helitron, Helentron and Helitron2) are DNA transposons. 
 ```
 # Installation
 ## mamba (Recommendation)
-If you don't have a mamba, you can install it with the following commands easily.
+If mamba is not installed on your system, you can install it with the following commands easily.
 ```
 wget "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh"
 bash Mambaforge-$(uname)-$(uname -m).sh -b
@@ -56,14 +56,14 @@ conda install zhenlisme::HELIANO -c bioconda -c conda-forge
 conda deactivate
 ```
 ## manual installation
-Before installation , you need to be sure that all dependencies have been installed in your computer and their pathes have been added into your environmental variables. All dependencies could be installed via conda/mamba.  
+Before installation , you need to be sure that all dependencies have been installed in your computer and that their path are defined into your environmental variables. All dependencies could be installed via conda/mamba.  
 1. download the latest HELIANO package.  
 `git clone https://github.com/Zhenlisme/HELIANO.git`
 2. switch to the source code dorectory that you cloned at the last step.  
    `cd HELIANO/`  
 3. run configure file.  
    `bash configure.sh`
-4. You can find HELIANO in bin/ directory.
+4. You can find HELIANO in the bin directory.
 # Usage
 ### 1. Activate the HELIANO conda environment (for conda/mamba installation)  
 `conda activate HELIANO`  
