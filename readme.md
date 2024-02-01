@@ -100,24 +100,29 @@ optional arguments:
   -v, --version         show program's version number and exit
 ```
 ### 3. Perform a test run of HELIANO  
-##### Here we will use the genome of Xenopus tropicalis as an example
-You can download it here: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/004/195/GCF_000004195.4_UCB_Xtro_10.0/GCF_000004195.4_UCB_Xtro_10.0_genomic.fna.gz.
-
+##### Here we will use the chromosome 18 of Fusarium oxysporum strain Fo5176 as an example, where you can find it in file test.fa .
 Perform the following code:
-
-`heliano -g genome.fa -pt 1 -is1 1 -is2 1 -sim_tir 90 -p 1e-5 -n 30 -o HELIANO_opt`
+`heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000`
 ### 4. HELIANO outputs
 You will find two main files if program runs successfully.
-1. RC.representative.bed: the predicted Helitron/Helentron coordinations.
+1. RC.representative.bed: the predicted Helitron/Helentron coordinations (saved as test.opt.tbl in this repository).
 2. RC.representative.fa: the predicted Helitron/Helentron sequences in fasta format.
-Notice: the two files will be empty if no Helitron/Helentron detected by HELIANO program.
 ##### Explanation for RC.representative.bed
 There are 11 columns in RC.representative.bed file:  
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-|NC_030677.2|20246175|20247385|Helentron_left_73-Helentron_right_74|79|+|2.0432e-176|104|Helentron|nonauto|insertion_Helentron_nonauto_1|
-|NC_030677.2|23640161|23640743|Helentron_left_73-Helentron_right_74|79|+|2.0432e-176|74.3|Helentron|nonauto|insertion_Helentron_nonauto_2|
-......
+|CP128282.1|53617|59046|Helentron_left_18-Helentron_right_18|7|-|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_1|
+|CP128282.1|83425|88824|Helentron_left_18-Helentron_right_18|7|-|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_2|
+|CP128282.1|94525|99924|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_3|
+|CP128282.1|306838|312276|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_4|
+|CP128282.1|665681|668554|Helentron_left_33-Helentron_right_32|3|-|1.3547e-05|60|Helentron|nonauto|insertion_Helentron_nonauto_1|
+|CP128282.1|668719|671599|Helentron_left_33-Helentron_right_32|3|+|1.3547e-05|60|Helentron|nonauto|insertion_Helentron_nonauto_2|
+|CP128282.1|855863|858738|Helentron_left_33-Helentron_right_32|3|+|1.3547e-05|60|Helentron|nonauto|insertion_Helentron_nonauto_3|
+|CP128282.1|855863|880806|Helentron_left_33-Helentron_right_32|3|+|1.3547e-05|60|Helentron|auto|insertion_Helentron_auto_5|
+|CP128282.1|926221|928267|CP128282.1-926221-928267|1|-|1|0|Helentron|orfonly|insertion_Helentron_orfonly_1|
+|CP128282.1|963556|968985|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_6|
+|CP128282.1|1107206|1112635|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_7|
+|CP128282.1|1259412|1264991|Helentron_left_18-Helentron_right_18|7|-|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_8|
 ##### Detailed explaination for each column.
 |Columns|Explaination|
 | ---- | ---- |
