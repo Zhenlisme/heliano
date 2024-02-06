@@ -66,7 +66,7 @@ Before installation , you need to be sure that all dependencies have been instal
 4. You can find HELIANO in the bin directory.
 # Usage
 ### 1. Activate the HELIANO conda environment (for conda/mamba installation)  
-`conda activate HELIANO`  
+`conda activate HELIANO`
 ### 2. Check the HELIANO binary  
 `HELIANO -h`
 ```
@@ -107,6 +107,10 @@ Perform the following code:
 You will find two main result files when HELIANO program runs successfully.
 1. RC.representative.bed: the predicted Helitron/Helentron coordinates in bed format (available in the file test.opt.tbl in this repository).
 2. RC.representative.fa: the predicted Helitron/Helentron sequences in fasta format.
+Other files or directories are intermediate outputs.
+1. TIR_count.tbl: Table for counts of terminal inverted repeats of each HLE subfamily.
+2. Boundary.tbl: Table for the conservation of flanking regions of each HLE subfamily.
+3. Helitron/ or Helentron/: Directory for intermediate files when detecting Helitron/Helentron.
 ##### Explanation for RC.representative.bed
 There are 11 columns in RC.representative.bed file:  
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
@@ -137,6 +141,6 @@ There are 11 columns in RC.representative.bed file:
 |variant|the insertion is Helitron or Helentron|
 |type|the mobility of HLE, either autonomous (auto) or nonautonomous (nonauto)|
 |name|unique identifier for each insertion|
-
+Notice: The insertions that encode Rep/helicase are considered putative autonomous HLEs.
 # To contact us
 For any questions, please email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
