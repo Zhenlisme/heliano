@@ -128,6 +128,7 @@ There are 11 columns in RC.representative.bed file:
 |CP128282.1|1107206|1112635|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_7|
 |CP128282.1|1259412|1264991|Helentron_left_18-Helentron_right_18|7|-|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_8|
 ##### Detailed explaination for each column.
+Notice: The insertions that encode Rep/helicase are considered putative autonomous HLEs.
 |Columns|Explaination|
 | ---- | ---- |
 |chrm-id|chromosome id|
@@ -141,6 +142,5 @@ There are 11 columns in RC.representative.bed file:
 |variant|the insertion is Helitron or Helentron|
 |type|the mobility of HLE, either autonomous (auto) or nonautonomous (nonauto)|
 |name|unique identifier for each insertion|
-Notice: The insertions that encode Rep/helicase are considered putative autonomous HLEs.
 # To contact us
 For any questions, please email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
