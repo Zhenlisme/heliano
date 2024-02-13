@@ -143,7 +143,7 @@ Notice: The insertions that encode Rep/helicase are considered putative autonomo
 |type|the mobility of HLE, either autonomous (auto) or nonautonomous (nonauto)|
 |name|unique identifier for each insertion|
 ### 5. Generation for consensus sequences
-The HELIANO package also provides a program (heliano_cons) for generating consensus sequences of HLE. 
+The HELIANO package also provides a program (heliano_cons) for generating consensus sequences of HLE
 Check the usage of heliano_cons:
 `heliano_cons -h`
 ```
