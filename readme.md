@@ -68,9 +68,9 @@ Before installation , you need to be sure that all dependencies have been instal
 ### 1. Activate the HELIANO conda environment (for conda/mamba installation)  
 `conda activate HELIANO`
 ### 2. Check the HELIANO binary  
-`HELIANO -h`
+`heliano -h`
 ```
-usage: HELIANO [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR [-n PROCESS] [-v]
+usage: heliano [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR [-n PROCESS] [-v]
 
 HELIANO can detect and classify different variants of Helitron-like elements: Helitron and Helentrons. Please visit https://github.com/Zhenlisme/HELIANO/ for more information. Email us:
 zhen.li3@universite-paris-saclay.fr
