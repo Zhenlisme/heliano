@@ -142,5 +142,26 @@ Notice: The insertions that encode Rep/helicase are considered putative autonomo
 |variant|the insertion is Helitron or Helentron|
 |type|the mobility of HLE, either autonomous (auto) or nonautonomous (nonauto)|
 |name|unique identifier for each insertion|
+### 5. Generation for consensus sequences
+The HELIANO package also provides a program (heliano_cons) for generating consensus sequences of HLE. 
+Check the usage of heliano_cons:
+`heliano_cons -h`
+```
+usage: heliano_cons [-h] -g GENOME -r REPSENBED -o OPDIR [-n PROCESS] [-v]
+
+Making consensus for Helitron-like sequences. Please visit https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -g GENOME, --genome GENOME
+                        The genome file in fasta format.
+  -r REPSENBED, --repsenbed REPSENBED
+                        The representative bed file (RC.representative.bed).
+  -o OPDIR, --opdir OPDIR
+                        The output directory.
+  -n PROCESS, --process PROCESS
+                        Maximum of threads to be used.
+  -v, --version         show program's version number and exit
+```
 # To contact us
 For any questions, please email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
