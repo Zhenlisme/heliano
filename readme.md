@@ -9,7 +9,7 @@ Helitron-like elements (Helitron, Helentron and Helitron2) are DNA transposons. 
   * [Manual installation](#manual-installation)
 - [Usage](#usage)
 - [References](#References)
-- [FAQ](#Frequently-asked-questions (FAQs))
+- [FAQ](#Frequently-asked-questions)
 - [To contact us](#to-contact-us)
 
 # Dependencies
@@ -171,7 +171,7 @@ Li Z , Gilbert C , Peng H , Pollet N. "Systematic annotation of Helitron-like el
 
 Li Z , Gilbert C , Peng H , Pollet N. "HELIANO: a Helitron-like element annotator." Zenodo (2024). [doi: 10.5281/zenodo.10625239](https://doi.org/10.5281/zenodo.10625239)
 
-# Frequently asked questions (FAQs)
+# Frequently asked questions
 ### 1. Postprocessing of Heliano output
 ### 2. Explain for
 
