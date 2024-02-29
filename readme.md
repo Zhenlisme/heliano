@@ -172,8 +172,9 @@ Li Z , Gilbert C , Peng H , Pollet N. "Systematic annotation of Helitron-like el
 Li Z , Gilbert C , Peng H , Pollet N. "HELIANO: a Helitron-like element annotator." Zenodo (2024). [doi: 10.5281/zenodo.10625239](https://doi.org/10.5281/zenodo.10625239)
 
 # Frequently asked questions
-### 1. Postprocessing of Heliano output
-### 2. Explain for
+### 1. How to get fragmented copies of HLEs?
+HELIANO is designed to predict complete insertions of Helitron-like elements (HLE), with the limitation that fragmented insertions will not be reported. To identify fragmented insertions, we recommend running RepeatMasker or BLASTN using HELIANO predictions as the query. Before you run RepeatMasker or BLASTN, we suggest mask the HLE query with a trusted non-HLE TE database because other non-HLE TEs might insert into long HLEs which potentially inflates sequence lengths.
+### 2. How to choose parameters properly?
 
 # To contact us
 For any questions, please email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
