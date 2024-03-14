@@ -44,7 +44,7 @@ mamba create -n HELIANO
 #activate the HELIANO environment
 mamba activate HELIANO
 # install 
-mamba install zhenlisme::HELIANO -c bioconda -c conda-forge
+mamba install zhenlisme::HELIANO -c conda-forge -c bioconda
 mamba deactivate
 ```
 ## conda
@@ -54,7 +54,7 @@ conda create -n HELIANO
 #activate the HELIANO environment
 conda activate HELIANO
 # installation 
-conda install zhenlisme::HELIANO -c bioconda -c conda-forge
+conda install zhenlisme::HELIANO -c conda-forge -c bioconda
 conda deactivate
 ```
 ## manual installation
