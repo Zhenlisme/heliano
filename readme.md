@@ -169,7 +169,7 @@ optional arguments:
 ### If you find HELIANO useful to you, please cite:
 Li Z , Gilbert C , Peng H , Pollet N. "Systematic annotation of Helitron-like elements in eukaryote genomes using HELIANO." bioRxiv (2024): 2024-02. [doi: 10.1101/2024.02.08.579435](https://doi.org/10.1101/2024.02.08.579435)  
 
-Li Z , Gilbert C , Peng H , Pollet N. "HELIANO: a Helitron-like element annotator." Zenodo (2024). [doi: 10.5281/zenodo.10625239](https://doi.org/10.5281/zenodo.10625239)
+Li Z , Pollet N. "HELIANO: a Helitron-like element annotator." Zenodo (2024). [doi: 10.5281/zenodo.10625239](https://doi.org/10.5281/zenodo.10625239)
 
 # Frequently asked questions
 ### 1. How to get fragmented copies of HLEs?
