@@ -72,10 +72,11 @@ Before installation , you need to be sure that all dependencies have been instal
 ### 2. Check the HELIANO binary  
 `heliano -h`
 ```
-usage: heliano [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE] -o OPDIR [-n PROCESS] [-v]
+usage: heliano [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE]
+               [-s SCORE] -o OPDIR [-n PROCESS] [-v]
 
-HELIANO can detect and classify different variants of Helitron-like elements: Helitron and Helentrons. Please visit https://github.com/Zhenlisme/HELIANO/ for more information. Email us:
-zhen.li3@universite-paris-saclay.fr
+heliano can detect and classify different variants of Helitron-like elements: Helitron, Helentron/Helitron2. Please visit
+https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -86,15 +87,19 @@ optional arguments:
   -dm DISTANCE_DOMAIN, --distance_domain DISTANCE_DOMAIN
                         The distance between HUH and Helicase domain, default is 2500.
   -pt {0,1}, --pair_helitron {0,1}
-                        For Helitron, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default no.
+                        For Helitron, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes.
+                        default yes.
   -is1 {0,1}, --IS1 {0,1}
-                        Set the insertion site of autonomous Helitron as A and T. 0: no, 1: yes. default no.
+                        Set the insertion site of autonomous Helitron as A and T. 0: no, 1: yes. default yes.
   -is2 {0,1}, --IS2 {0,1}
-                        Set the insertion site of autonomous Helentron/Helitron2 as T and T. 0: no, 1: yes. default no.
+                        Set the insertion site of autonomous Helentron/Helitron2 as T and T. 0: no, 1: yes. default yes.
   -sim_tir {100,90,80}, --simtir {100,90,80}
                         Set the simarity between short inverted repeats(TIRs) of Helitron2/Helentron. Default 100.
   -p PVALUE, --pvalue PVALUE
-                        The p-value for fisher's exact test.
+                        The p-value for fisher's exact test. default is 1e-3.
+  -s SCORE, --score SCORE
+                        The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 100, default is
+                        32.
   -o OPDIR, --opdir OPDIR
                         The output directory.
   -n PROCESS, --process PROCESS
