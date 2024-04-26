@@ -1,5 +1,5 @@
 HMMER3/f [3.3 | Nov 2019]
-NAME  Hel_Helentron
+NAME  Hel_HLE2
 LENG  331
 ALPH  amino
 RF    no
@@ -1014,7 +1014,7 @@ HMM          A        C        D        E        F        G        H        I   
           0.66065  0.72673        *  0.49974  0.93316  0.00000        *
 //
 HMMER3/f [3.3 | Nov 2019]
-NAME  Hel_Helitron
+NAME  Hel_HLE1
 LENG  494
 ALPH  amino
 RF    no
@@ -2518,7 +2518,7 @@ HMM          A        C        D        E        F        G        H        I   
           0.03333  3.41780        *  0.61958  0.77255  0.00000        *
 //
 HMMER3/f [3.3 | Nov 2019]
-NAME  Rep_Helentron
+NAME  Rep_HLE2
 LENG  287
 ALPH  amino
 RF    no
@@ -3401,7 +3401,7 @@ HMM          A        C        D        E        F        G        H        I   
           0.01013  4.59727        *  0.61958  0.77255  0.00000        *
 //
 HMMER3/f [3.3 | Nov 2019]
-NAME  Rep_Helitron
+NAME  Rep_HLE1
 LENG  288
 ALPH  amino
 RF    no

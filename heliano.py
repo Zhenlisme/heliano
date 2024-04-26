@@ -8,7 +8,7 @@ from collections import defaultdict
 import pybedtools as BT
 
 """
-This program is supposed to detect and classify different variants of Helitron-like elements: Helitron, Helentron/Helitron2. Please follow the homepage of this software for more information: https://github.com/Zhenlisme/heliano.   
+This program is supposed to detect and classify different variants of Helitron-like elements: HLE1 and HLE2. Please follow the homepage of this software for more information: https://github.com/Zhenlisme/heliano.   
 """
 
 # define Structure_search class for motif identification, including stem loop and terminal inverted repeats.
@@ -164,6 +164,12 @@ class Homologous_search:
         self.window = window
         self.distance_domain = distance_domain
         self.pvalue = float(pvalue)
+        if Args.terminal_sequence:
+            self.pairfile = os.path.abspath(Args.terminal_sequence)
+            sys.stdout.write('You added the pairfile %s.\n' % self.pairfile)
+            if not os.path.isfile(self.pairfile):
+                sys.stderr.write("Error: The pair list file doesn't exist, please check!\n")
+                exit(0)
         # To transform the header file to regular expression.
         with open(headerfile, 'r') as F:
             headerpattern_list = F.read().rstrip().split('\n')
@@ -173,8 +179,47 @@ class Homologous_search:
             os.mkdir(self.wkdir)
             os.chdir(self.wkdir)
         else:
-            os.chdir(self.wkdir)
-            
+            sys.stderr.write('Error: Directory %s exists. Please change!\n' % self.wkdir)
+            exit(0)
+
+        ## To check the pair list file
+        self.terminalfile_dict = defaultdict(lambda: defaultdict(dict))
+        self.prepair_dict = defaultdict(list)
+        if Args.terminal_sequence:
+            pairdict = defaultdict(list)
+            with open(self.pairfile, 'r') as F:
+                for line in F:
+                    splitline = line.rstrip().split('\t')
+                    pairdict[splitline[0]].append(splitline[1:])
+            pairdir = 'Pre_pair/'
+            if not os.path.exists(pairdir):
+                os.mkdir(pairdir)
+            for classname in pairdict:
+                leftfile = os.path.abspath(''.join([pairdir, classname, '.left.pre.fa']))
+                rightfile = os.path.abspath(''.join([pairdir, classname, '.right.pre.fa']))
+                self.terminalfile_dict[classname]['left'] = leftfile
+                self.terminalfile_dict[classname]['right'] = rightfile
+                recorder_dict = {}
+                with open(leftfile, 'w') as left_w, open(rightfile, 'w') as right_w:
+                    for line in pairdict[classname]:
+                        leftname, leftseq, rightname, rightseq = line
+                        leftname, rightname = ''.join([leftname, 'pre']), ''.join([rightname, 'pre'])
+                        ## To avoid repeatly writing
+                        if leftname not in recorder_dict:
+                            left_w.write(''.join(['>', leftname, '\n', leftseq, '\n']))
+                        if rightname not in recorder_dict:
+                            right_w.write(''.join(['>', rightname, '\n', rightseq, '\n']))
+                        self.prepair_dict[leftname].append(rightname)
+                        recorder_dict[leftname] = 1
+                        recorder_dict[rightname] = 1
+
+        if Args.dis_denovo:
+            if not self.terminalfile_dict:
+                sys.stderr.write('Error: The pair list file is either not specified or empty. See parameter "-ts".\n')
+                exit(0)
+            else:
+                sys.stdout.write(
+                    'You will not search for the terminal structures of HLE in a de-novo way, but by using the pair file: %s.\n' % self.pairfile)
         self.bedtoolstmp = os.path.abspath('BedtoolsTMP')
         if not os.path.exists(self.bedtoolstmp):
             os.mkdir(self.bedtoolstmp)
@@ -200,9 +245,9 @@ class Homologous_search:
         with open(self.CTRR_stem_loop_description, 'w') as F:
             F.write(CTRR_description)
 
-        # To define stem_loop structure of  Helentron/Helitron2
+        # To define stem_loop structure of  HLE2
         self.subtir_description = '%s/subtir_stem_loop.descr' % CWD
-        # Add 'T' in the end if user limitted the 'T-T' insertion site for Helentron/Helitron2.
+        # Add 'T' in the end if user limitted the 'T-T' insertion site for HLE2.
         if Args.IS2:
             subtir_description = """r1 s1 r1' s2\nr1 1:1 NNNNN[10]:[10]NNNNN TGCA\ns1 0 N[15]\ns2 0 NNNNN[10]T\n"""
         else:
@@ -454,7 +499,7 @@ class Homologous_search:
                 if extend_id.endswith('p'):
                     stem_loop = [i for i in stem_loop_dict[extend_id] if i[5] == '+']
                     ## order by start position (closer), stem length (longer), loop length (shorter),  total length (shorter)
-                    if classname == 'Helentron':
+                    if classname == 'HLE2':
                         stem_loop = sorted(stem_loop, key = lambda x: [x[0], int(x[1]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
                         if stem_loop:
                             stem_start, stem_stop = stem_loop[0][1:3]
@@ -474,7 +519,7 @@ class Homologous_search:
                 else:
                     stem_loop = [i for i in stem_loop_dict[extend_id] if i[5] == '-']
                     ## order by end position (longer), stem length (longer), loop length (shorter), total length (shorter)
-                    if classname == 'Helentron':
+                    if classname == 'HLE2':
                         stem_loop = sorted(stem_loop, key=lambda x: [x[0], -int(x[2]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
                         if stem_loop:
                             stem_start, stem_stop = stem_loop[0][1:3]
@@ -505,7 +550,7 @@ class Homologous_search:
         os.remove(extend_file)
 
     def intergrated_program(self, subgenome):
-        # This function is used to recover terminal signals of Helitron-like elements (TIRs for Helentron/Helitron2; TC... motif and ...CTRR motif for Helitron)
+        # This function is used to recover terminal signals of Helitron-like elements (TIRs for HLE2; TC... motif and ...CTRR motif for Helitron)
         rep_hmmsearch_opt, hel_hmmsearch_opt = self.hmmsearch(subgenome)
         ORF_list = self.parser_hmmsearch(rep_hmmsearch_opt, hel_hmmsearch_opt, subgenome)
         sys.stdout.write('Find %s rep-hel blocks in %s.\n' % (str(len(ORF_list)), os.path.basename(subgenome).replace('.fa', '')))
@@ -520,8 +565,22 @@ class Homologous_search:
             chrm_limit = len(self.genome_dict[ORF_chrmid])
             rep_name, hel_name = Helitron_candidate[6:8]
 
+            ## To decide class name
+            if hel_name == 'HLE1' and rep_name == 'HLE1':
+                classname = 'HLE1'
+            elif hel_name == 'HLE2' and rep_name == 'HLE2':
+                classname = 'HLE2'
+            else:
+                classname = '_or_'.join([rep_name, hel_name])
             ## To produce orf id which will be used as sole identifier of terminal signals.
             ORFID = '-'.join([ORF_chrmid, str(ORF_start), str(ORF_stop)])
+
+            ## To decide to run denovo structural search or not. if not, just save the ORFs
+            if Args.dis_denovo:
+                RC_total_candidate.append(
+                    (ORF_chrmid, str(ORF_start), str(ORF_stop), strand, classname, (), (), ORFID))
+                continue
+
             temp_name_for_helitron = '-'.join([ORF_chrmid, str(ORF_start), str(ORF_stop)])
             expansion_all_seqname = ''.join([temp_name_for_helitron, '.expansion.fa'])
             left_seqname = ''.join([temp_name_for_helitron, '.left.fa'])
@@ -549,7 +608,7 @@ class Homologous_search:
                 next_candidate = ORF_list[Helitron_candidate_index + 1]
                 next_start = next_candidate[1]
                 right_boundary = next_start if right_boundary > next_start else right_boundary
-           
+
             # To output extended sequences to fasta files
             left_seq = str(self.genome_dict[ORF_chrmid][left_boundary - 1: ORF_start])
             right_seq = str(self.genome_dict[ORF_chrmid][ORF_stop: right_boundary])
@@ -562,7 +621,7 @@ class Homologous_search:
                 F.write(''.join(['>', ORF_chrmid, '\n', right_seq, '\n']))
             
             # Candiadte is Helitron, try to search for left terminal signals in left extension and right terminal signals in right extension.
-            if hel_name == 'Helitron' and rep_name == 'Helitron':
+            if classname == 'HLE1':
                 if strand == '+':
                     # left terminal signals are TC... like
                     TC_list = Structure_search(genome=left_seqname, START=left_boundary - 1).regularexpression_match(self.headerpattern, '+')
@@ -582,17 +641,11 @@ class Homologous_search:
                     if Args.IS1:
                         TC_list = [[line[0], line[1], str(int(line[2]) - 1)] for line in TC_list]
                 RC_total_candidate.append((
-                                          ORF_chrmid, str(ORF_start), str(ORF_stop), strand, 'Helitron', tuple(TC_list),
+                                          ORF_chrmid, str(ORF_start), str(ORF_stop), strand, classname, tuple(TC_list),
                                           tuple(Stem_loop_list), ORFID))
 
-            # Candidate is Helentron/Helitron2
+            # Candidate is HLE2
             else:
-                if hel_name == 'Helentron' and rep_name == 'Helentron':
-                    class_name = 'Helentron'
-                else:
-                    # unable to distinguish, will take it as Helentron-like
-                    class_name = '_or_'.join([rep_name, hel_name])
-
                 # Size of terminal inverted sequences should be greater than the size of predicted transposase
                 mini_dist_tir = ORF_stop - ORF_start
                 # Size of terminal inverted sequences should be less than the size of extension
@@ -628,7 +681,7 @@ class Homologous_search:
                         else:
                             left_list.append((ORF_chrmid, int(left_loc[0]), int(left_loc[1])))
                             right_list.append((ORF_chrmid, int(right_loc[0]), int(right_loc[1])))
-                RC_total_candidate.append((ORF_chrmid, str(ORF_start), str(ORF_stop), strand, class_name,
+                RC_total_candidate.append((ORF_chrmid, str(ORF_start), str(ORF_stop), strand, classname,
                                            tuple(left_list), tuple(right_list), ORFID))
             os.remove(expansion_all_seqname)
             os.remove(left_seqname)
@@ -699,7 +752,7 @@ class Homologous_search:
             seq_len = len(self.genome_dict[chrm])
             if seq_len < 1000:  ##Skip chrms whose length is shorter than 1000 bp
                 sys.stdout.write(
-                    "Chrm %s will not be used to detect autonomous Helitron/Helentron as its length is shorter than 1000 bp\n" % chrm)
+                    "Chrm %s will not be used to detect autonomous HLEs as its length is shorter than 1000 bp\n" % chrm)
                 continue
             subgenome_list.append((chrm, seq_len))
 
@@ -752,7 +805,7 @@ class Homologous_search:
             processnum = len(subgenome_list)
         else:
             processnum = self.process_num
-        
+        sys.stdout.write('Start to search for HLE rep-hel blocks...\n')
         # Use python multiple threading
         planpool = ThreadPool(processnum)
         #processnum = processnum if self.cpu_count > processnum else self.cpu_count
@@ -778,7 +831,9 @@ class Homologous_search:
              '-max_target_seqs', '999999999', '-evalue', str(self.evalue_blastn), '-task', 'blastn-short',
              '-outfmt', '6 qseqid sseqid pident qstart qend sstart send evalue qlen bitscore', '-out', blastn_opt])
         blastn_pro.wait()
-        
+        ## if the blastn_opt is empty, return
+        if not os.path.getsize(blastn_opt):
+            return 0
         ## The blastn output is sorted by queryname. Split blastn outfmt-6 table into bed files.
         with open(blastn_opt, 'r') as F:
             ## init reading 
@@ -819,8 +874,8 @@ class Homologous_search:
         subfile = ''.join([optdir, '/', init_qname, '.bed'])
         with open(subfile, 'w') as wF:
             wF.writelines(deposit_list)
-        if os.path.exists(blastn_opt):
-            os.remove(blastn_opt)
+        os.remove(blastn_opt)
+        return 1
 
     def merge_overlaped_intervals(self, bedinput, represent_bed):
         # To merge overlaped nonautonomous candidates
@@ -916,7 +971,69 @@ class Homologous_search:
                         True_pair_list.append(line[3])
         return set(True_pair_list)
 
-    def prepare_terminal_seq(self, Helitron_list, pair=False, classname='Helitron'):
+    def add_unique_pre_ts(self, pre_lts_fa, pre_rts_fa, new_lts_fa, new_rts_fa):
+        pre_lts_dict = SeqIO.parse(pre_lts_fa, 'fasta')
+        pre_rts_dict = SeqIO.parse(pre_rts_fa, 'fasta')
+        pre_lts_dict = {k.id: k.seq.upper() for k in pre_lts_dict}
+        pre_rts_dict = {k.id: k.seq.upper() for k in pre_rts_dict}
+        if os.path.isfile(new_lts_fa) and os.path.isfile(new_rts_fa):
+            sum_lts_length = sum([len(pre_lts_dict[i]) for i in pre_lts_dict])
+            lts_evalue_blastn = sum_lts_length * 30 / (2 ** 30)
+            lts_blastn_opt = 'lts.blastn.tbl'
+            lts_blastn_pro = subprocess.Popen(
+                ['blastn', '-subject', new_lts_fa, '-query', pre_lts_fa,
+                '-max_target_seqs', '5', '-evalue', str(lts_evalue_blastn), '-task', 'blastn-short',
+                '-outfmt', '6 qseqid sseqid pident qstart qend sstart send evalue qlen bitscore', '-out', lts_blastn_opt])
+            lts_blastn_pro.wait()
+
+            sum_rts_length = sum([len(pre_rts_dict[i]) for i in pre_rts_dict])
+            rts_evalue_blastn = sum_rts_length * 30 / (2 ** 30)
+            rts_blastn_opt = 'rts.blastn.tbl'
+            rts_blastn_pro = subprocess.Popen(
+                ['blastn', '-subject', new_rts_fa, '-query', pre_rts_fa,
+                '-max_target_seqs', '5', '-evalue', str(rts_evalue_blastn), '-task', 'blastn-short',
+                '-outfmt', '6 qseqid sseqid pident qstart qend sstart send evalue qlen bitscore', '-out', rts_blastn_opt])
+            rts_blastn_pro.wait()
+
+            with open(lts_blastn_opt, 'r') as F:
+                overlap_lts = {line.split('\t')[0] for line in F}
+            with open(rts_blastn_opt, 'r') as F:
+                overlap_rts = {line.split('\t')[0] for line in F}
+        else: ## the de-novo structural files are empty
+            overlap_lts = set()
+            overlap_rts = set()
+
+        unique_lts = list(set(pre_lts_dict.keys()) - overlap_lts)
+        unique_rts = list(set(pre_rts_dict.keys()) - overlap_rts)
+
+        ## To find unique pairs
+        unique_pair = []
+        for lts in unique_lts:
+            for rts in self.prepair_dict[lts]:
+                if rts in unique_rts:
+                    unique_pair.append((lts, rts))
+        ## To pend
+        with open(new_lts_fa, 'a') as lts_w, open(new_rts_fa, 'a') as rts_w:
+            for pair in unique_pair:
+                left, right = pair
+                lts_w.write(''.join(['>', left, '\n', str(pre_lts_dict[left]), '\n']))
+                rts_w.write(''.join(['>', right, '\n', str(pre_rts_dict[right]), '\n']))
+        return unique_pair
+
+    def transform_orfbedfile(self, orffile, classname):
+        orf_alternative_file = ''.join([classname, '.orfonly.alternative.bed'])
+        with open(orffile, 'r') as F, open(orf_alternative_file, 'w') as wf:
+            init = 1
+            for line in F:
+                splitlines = line.rstrip().split('\t')
+                name = ''.join(['insertion_', classname, '_orfonly_', str(init)])
+                newline = '\t'.join(
+                    [splitlines[0], splitlines[1], splitlines[2], splitlines[3], '1', splitlines[5], '1', '0', classname, 'orfonly', name])
+                wf.write(newline)
+                wf.write('\n')
+                init += 1
+
+    def prepare_terminal_seq(self, Helitron_list, pair=False, classname='HLE1'):
         if not os.path.exists(classname):
             os.mkdir(classname)
         os.chdir(classname)
@@ -975,28 +1092,46 @@ class Homologous_search:
                         seq = str(self.genome_dict[line[0]][int(right[2]) - EXTEND:int(right[2])].upper())
                     right_seq.append(''.join(['>', id, '\n', seq, '\n']))
                     
-                if classname == 'Helitron' and pair:  ## pair the left and right terminals that ever appears on the same Helitron region.
+                if classname == 'HLE1' and pair:  ## pair the left and right terminals that ever appears on the same Helitron region.
                     [Helitron_pair_list.append((left, tuple(right_ter_name))) for left in left_ter_name]  ## all possibilities.
-                elif classname != 'Helitron':
+                elif classname != 'HLE1':
                     [Helitron_pair_list.append((left_ter_name[i], right_ter_name[i])) for i in range(len(left_ter_name))]
                 leftF.writelines(left_seq)
                 rightF.writelines(right_seq)
 
-        if not left_exist or not right_exist:  ## means that neither left nor right terminal signals exist, so skip blastn
-            os.chdir('../')
-            return []
+        ## if run denovo search for motifs:
+        if not Args.dis_denovo:
+            if not left_exist or not right_exist: ## means that neither left nor right terminal signals exist, so skip blastn
+                self.transform_orfbedfile(ORF_bedfile, classname=classname)
+                os.chdir('../')
+                return []
+            else: ### To redunce redundency via cd-hit-est
+                left_cluster_dict = self.cdhitest_clust(left_ter_file, left_ter_reduce_file,
+                                                        helitron_type=''.join([classname, '_left']), id=0.9)
+                right_cluster_dict = self.cdhitest_clust(right_ter_file, right_ter_reduce_file,
+                                                         helitron_type=''.join([classname, '_right']), id=0.9)
+        else: ## No need to run de-novo terminal structural detection
+            left_cluster_dict = {}
+            right_cluster_dict = {}
 
-        ### To redunce redundency via cd-hit-est
-        left_cluster_dict = self.cdhitest_clust(left_ter_file, left_ter_reduce_file, helitron_type=''.join([classname, '_left']), id=0.9)
-        right_cluster_dict = self.cdhitest_clust(right_ter_file, right_ter_reduce_file, helitron_type=''.join([classname, '_right']), id=0.9)
-        
+        pre_left_file = self.terminalfile_dict[classname]['left']
+        pre_right_file = self.terminalfile_dict[classname]['right']
+        unique_pairlist = []
+        if pre_left_file: ### To pend unique-pre-ts signals
+            unique_pairlist = self.add_unique_pre_ts(pre_left_file, pre_right_file, left_ter_reduce_file, right_ter_reduce_file)
+        else:
+            if Args.dis_denovo:
+                ## This means no terminal structures are avaliable. Just output the orf information.
+                self.transform_orfbedfile(ORF_bedfile, classname=classname)
+                os.chdir('../')
+                return []
         ## To make left-right pairs
         combinid_file = '%s.combinid.txt' % classname
         if pair:
             ### To get the collapsed cluster pairs
             collapsed_pair_dict = defaultdict(list)
             terminal_pair_dict = dict(Helitron_pair_list)
-            if classname == 'Helitron':  ## pair the left and right terminals that ever appears on the same Helitron region.
+            if classname == 'HLE1':  ## pair the left and right terminals that ever appears on the same Helitron region.
                 for left_name in terminal_pair_dict:
                     right_name_list = terminal_pair_dict[left_name]
                     for right_name in right_name_list:
@@ -1016,6 +1151,9 @@ class Homologous_search:
                 for left in collapsed_pair_dict:
                     for right in collapsed_pair_dict[left]:
                         F.write(''.join([left, '\t', right, '\n']))
+                ## To output unique-pre-ts pairs
+                for pair in unique_pairlist:
+                    F.write(''.join([pair[0], '\t', pair[1], '\n']))
         else:
             ## Just make all possibilities
             left_reduced_list = set(left_cluster_dict.values())
@@ -1024,6 +1162,9 @@ class Homologous_search:
                 for left in left_reduced_list:
                     for right in right_cluster_dict:
                         F.write(''.join([left, '\t', right, '\n']))
+                ## To output unique-pre-ts pairs, not mixing.
+                for pair in unique_pairlist:
+                    F.write(''.join([pair[0], '\t', pair[1], '\n']))
 
         ## To evaluate the size range
         max_orf_length = sorted(ORF_length_list)[-1]
@@ -1037,20 +1178,24 @@ class Homologous_search:
             os.makedirs(left_beddir)
         if not os.path.exists(right_beddir):
             os.makedirs(right_beddir)
-        self.blastn(left_ter_reduce_file, left_beddir)
-        self.blastn(right_ter_reduce_file, right_beddir)
-
+        lblastn_status = self.blastn(left_ter_reduce_file, left_beddir)
+        rblastn_status = self.blastn(right_ter_reduce_file, right_beddir)
+        ## To report if blastn runs well
+        if lblastn_status and rblastn_status:
+            sys.stdout.write('blastn runs well!\n')
+        else:
+            sys.stdout.write('No similar hits found for LTS/RTS for %s!\n' % classname)
         ## Prepare for fisher's exact test (avoid overloading, to split bedfiles )
         sys.stdout.write("Prepare for windowing for %s ...\n" % classname)
         subed_dir = '_'.join([classname, 'Windowing'])
         try:
             split_joint_program = subprocess.Popen(
                 ['Rscript', SPLIT_JOINT_PRO, left_beddir, right_beddir, combinid_file, subed_dir,
-                self.genome_size, str(half_distance), BEDTOOLS_PATH, str(self.process_num)], stdout=subprocess.DEVNULL)
+                self.genome_size, str(half_distance), BEDTOOLS_PATH, str(self.process_num)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             split_joint_program.wait()
             joint_filepath_blastn = ''.join([subed_dir, '/', 'left_right.path.join'])
         except:
-            sys.stderr.write("Windowing program failed...\n")
+            sys.stderr.write("Error: Windowing program failed...\n")
             exit(0)
 
         ## To run fisher's exact text to select the co-occured left and right terminal signals
@@ -1064,11 +1209,11 @@ class Homologous_search:
         try:
             fisher_program = subprocess.Popen(
                 ['Rscript', FISHER_PRO, BEDTOOLS_PATH, self.genome_size, joint_filepath_blastn, bed_optdir,
-                str(self.process_num), str(self.pvalue)], stdout=subprocess.DEVNULL)
+                str(self.process_num), str(self.pvalue)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             fisher_program.wait()
             sys.stdout.write("Fisher's exact test finished for %s!\n" % classname)
         except:
-            sys.stderr.write("Fisher's exact test failed...\n")
+            sys.stderr.write("Error: Fisher's exact test failed...\n")
             exit(0)
 
         FisherBed_files = ['/'.join([bed_optdir, file]) for file in os.listdir(bed_optdir)]
@@ -1116,18 +1261,7 @@ class Homologous_search:
         ## candidates whose significant terminal signals are unable to be found.
         auto_alternative_bed = BT.BedTool(auto_alternative_file)
         ORF_without_ter_bed = ORF_bed.intersect(auto_alternative_bed, nonamecheck=True, v=True, s=True, wa=True).saveas('OnlyORF.bed')
-        orf_alternative_file = ''.join([classname, '.orfonly.alternative.bed'])
-        with open(orf_alternative_file, 'w') as WF:
-            with open('OnlyORF.bed', 'r') as f2:
-                init = 1
-                for line in f2:
-                    line = line.rstrip().split('\t')
-                    name = ''.join(['insertion_', classname, '_orfonly_', str(init)])
-                    newline = '\t'.join(
-                        [line[0], line[1], line[2], line[3], '1', line[5], '1', '0', classname, 'orfonly', name])
-                    WF.write(newline)
-                    WF.write('\n')
-                    init += 1
+        self.transform_orfbedfile('OnlyORF.bed', classname=classname)
         os.chdir('../')
 
     def malign(self, fafile):
@@ -1298,21 +1432,21 @@ class Homologous_search:
         ## To do selection for autonomous firstly, because the nonautonomous counterparts will be dertermined by autonomous ones.
         candidate_list = []
         RC_replist = []
-        if classname == 'Helitron':
+        if classname == 'HLE1':
             for line in alternative_list:
                 pairname = line[3]
                 ## insertions that only contain orf regions will automatically pass this filter, because default value is 0.
                 if self.Boundary_iden_dict[pairname]['left'] < 0.7 and self.Boundary_iden_dict[pairname]['right'] < 0.7:
                     candidate_list.append(line)
-        else: ## means Helentron
+        else: ## means HLE2
             for line in alternative_list:
                 pairname = line[3]
                 left_iden, right_iden = self.Boundary_iden_dict[pairname]['left'], self.Boundary_iden_dict[pairname]['right']
                 if left_iden < 0.7:
-                    ## means regular Helentron, try to find stem-loop terminal markers at 5'end
+                    ## means regular HLE2, try to find stem-loop terminal markers at 5'end
                     candidate_list.append(line)
                 elif right_iden < 0.7 and left_iden >= 0.7:
-                    ## unregular Helentron, try to find stem-loop terminal markers at 3'end
+                    ## unregular HLE2, try to find stem-loop terminal markers at 3'end
                     line[-3] = ''.join([line[-3], '.2'])
                     candidate_list.append(line)
         if not candidate_list:
@@ -1351,14 +1485,137 @@ class Homologous_search:
                     WF.write(str(seq.reverse_complement()))
                     WF.write('\n')
 
+    def Convienced_LTS_RTS(self, RCfile, opfile):
+        ## To output convinced pair list which can be used as query in another close species genome.
+        with open(RCfile, 'r') as F:
+            pairlist = {line.rstrip().split("\t")[3] for line in F}
+        convienced_dict = defaultdict(list)
+        for pair in pairlist:
+            tirvalue = self.Terminal_dict[pair]
+            if float(tirvalue) <= 0.2:
+                if pair in self.Boundary_iden_dict:
+                    left_value = float(self.Boundary_iden_dict[pair]['left'])
+                    right_value = float(self.Boundary_iden_dict[pair]['right'])
+                    classname = pair.split('_left')[0]
+                    if 'HLE2' in pair:
+                        if left_value < 0.7 or right_value < 0.7:
+                            convienced_dict[classname].append(pair)
+                    else:  ## means Helitron
+                        if left_value < 0.7 and right_value < 0.7:
+                            convienced_dict[classname].append(pair)
+
+        oplist = []
+        for classname in convienced_dict:
+            ## To read the left terminal sequence
+            left_terminal_file = ''.join([classname, '/', classname, '.reduce.left.fa'])
+            left_terminal_dict = SeqIO.parse(left_terminal_file, 'fasta')
+            left_terminal_dict = {k.id: k.seq.upper() for k in left_terminal_dict}
+            ## To read the right terminal sequence
+            right_terminal_file = ''.join([classname, '/', classname, '.reduce.right.fa'])
+            right_terminal_dict = SeqIO.parse(right_terminal_file, 'fasta')
+            right_terminal_dict = {k.id: k.seq.upper() for k in right_terminal_dict}
+
+            for pair in convienced_dict[classname]:
+                left, right = pair.split('-')
+                left_seq = str(left_terminal_dict[left])
+                right_seq = str(right_terminal_dict[right])
+                oplist.append(''.join([classname, '\t', left, '\t', left_seq, '\t', right,'\t', right_seq, '\n']))
+        with open(opfile, 'w') as F:
+            F.writelines(oplist)
+
+    def Pre_ts_solo(self, classname, pre_lts_file, pre_rts_file):
+        if not os.path.exists(classname):
+            os.mkdir(classname)
+        os.chdir(classname)
+        ## To evaluate the size range
+        distance_na = int(self.window) * 2
+        half_distance = int(round(int(distance_na) / 2, 0))
+        sys.stdout.write('The length of %s is expected to be shorter than %s.\n' % (classname, str(distance_na + 100)))
+        ## To run blastn to get homologies
+        left_beddir, right_beddir = 'SubBlastnBed/%s_left' % classname, 'SubBlastnBed/%s_right' % classname
+        if not os.path.exists(left_beddir):
+            os.makedirs(left_beddir)
+        if not os.path.exists(right_beddir):
+            os.makedirs(right_beddir)
+        self.blastn(pre_lts_file, left_beddir)
+        self.blastn(pre_rts_file, right_beddir)
+        ## To output combine id
+        combinid_file = '%s.combinid.txt' % classname
+        with open(combinid_file, 'w') as F:
+            F.writelines([''.join([left, '\t', right, '\n']) for left in self.prepair_dict for right in self.prepair_dict[left] if re.match('%s_left'%classname, left)])
+
+        ## Prepare for fisher's exact test (avoid overloading, to split bedfiles )
+        sys.stdout.write("Prepare for windowing for %s ...\n" % classname)
+        subed_dir = '_'.join([classname, 'Windowing'])
+        try:
+            split_joint_program = subprocess.Popen(
+                ['Rscript', SPLIT_JOINT_PRO, left_beddir, right_beddir, combinid_file, subed_dir,
+                 self.genome_size, str(half_distance), BEDTOOLS_PATH, str(self.process_num)], stdout=subprocess.DEVNULL)
+            split_joint_program.wait()
+            joint_filepath_blastn = ''.join([subed_dir, '/', 'left_right.path.join'])
+        except:
+            sys.stderr.write("Error: Windowing program failed...\n")
+            exit(0)
+
+        ## To run fisher's exact text to select the co-occured left and right terminal signals
+        sys.stdout.write("Begin to run fisher's exact test for %s!\n" % classname)
+
+        bed_optdir = '%s_BedFisher' % classname
+        if os.path.exists(bed_optdir):
+            shutil.rmtree(bed_optdir)
+        os.mkdir(bed_optdir)
+
+        try:
+            fisher_program = subprocess.Popen(
+                ['Rscript', FISHER_PRO, BEDTOOLS_PATH, self.genome_size, joint_filepath_blastn, bed_optdir,
+                 str(self.process_num), str(self.pvalue)], stdout=subprocess.DEVNULL)
+            fisher_program.wait()
+            sys.stdout.write("Fisher's exact test finished for %s!\n" % classname)
+        except:
+            sys.stderr.write("Error: Fisher's exact test failed...\n")
+            exit(0)
+
+        FisherBed_files = ['/'.join([bed_optdir, file]) for file in os.listdir(bed_optdir)]
+
+        ## To merge and sort all Fisher bed files
+        fisher_pvalue_file = '%s.joint.pvalue.bed' % classname
+        fisher_filelist = [''.join([bed_optdir, '/', file]) for file in os.listdir(bed_optdir) if file.endswith('.bed')]
+        with open(fisher_pvalue_file, 'w') as WF:
+            for subfisher in fisher_filelist:
+                with open(subfisher, 'r') as F:
+                    content = F.read()
+                    WF.write(content)
+        try:
+            sort_pro = subprocess.Popen(
+                ['bash', SORT_PRO, fisher_pvalue_file, str(self.process_num)],
+                stdout=subprocess.DEVNULL)
+            sort_pro.wait()
+            sys.stdout.write("Merge and sort fisher result files finished for %s!\n" % classname)
+        except:
+            sys.stdout.write("Merge and sort fisher result files failed for %s!\n" % classname)
+            exit(0)
+        fisher_pvalue_bed = BT.BedTool(fisher_pvalue_file).saveas('Nonauto.bed')
+        os.chdir('../')
+
     def main(self):
-        RC_total_candidate = self.autonomous_detect()
+        self.Boundary_iden_dict = defaultdict(lambda: defaultdict(lambda: 1))
+        self.Terminal_dict = defaultdict(lambda: 1)
+
         RC_total_candidate_dict = defaultdict(list)
+        RC_total_candidate = self.autonomous_detect()
         [RC_total_candidate_dict[line[4]].append(line) for line in RC_total_candidate]
+        orf_classname_list = list(RC_total_candidate_dict.keys())
+        unique_pre_ts_classname = []
+        classname_list = []
+        classname_list.extend(orf_classname_list)
+        if self.prepair_dict:
+            ## means add pre-ts
+            unique_pre_ts_classname = list(set(self.terminalfile_dict.keys()) - set(orf_classname_list))
+            classname_list.extend(unique_pre_ts_classname)
 
         Repsentative_file_list = []
         ## Loop for each variants.
-        for class_name in RC_total_candidate_dict:
+        for class_name in classname_list:
             op_representative = '%s.representative.bed' % class_name
             if os.path.exists(op_representative):
                 os.remove(op_representative)
@@ -1368,39 +1625,38 @@ class Homologous_search:
             Auto_file_list = []
             ORFonly_file_list = []
             RC_list = RC_total_candidate_dict[class_name]
-            if re.findall('Helentron', class_name):  ## need to pair the terminal repeats
-                self.prepare_terminal_seq(RC_list, pair=True, classname=class_name)
-            else:
-                if not Args.pair_helitron:
-                    self.prepare_terminal_seq(RC_list, pair=False, classname=class_name)
-                else:
+            if RC_list:
+                if re.findall('HLE2', class_name):  ## need to pair the terminal repeats
                     self.prepare_terminal_seq(RC_list, pair=True, classname=class_name)
+                else:
+                    if not Args.pair_helitron:
+                        self.prepare_terminal_seq(RC_list, pair=False, classname=class_name)
+                    else:
+                        self.prepare_terminal_seq(RC_list, pair=True, classname=class_name)
+            else:
+                self.Pre_ts_solo(classname=class_name, pre_lts_file=self.terminalfile_dict[class_name]['left'],
+                                 pre_rts_file=self.terminalfile_dict[class_name]['right'])
 
             fisher_beddir = ''.join([class_name, '/', class_name, '_BedFisher'])
             if os.path.exists(fisher_beddir):
                 FisherFile_list.extend([''.join([fisher_beddir, '/', file]) for file in os.listdir(fisher_beddir)])
                 ## To check that if the boundary of each family can be well aligned.
                 ## To check that if the families contain long terminal inverted repeats.
-                self.Boundary_iden_dict = defaultdict(lambda: defaultdict(lambda: 1))
-                self.Terminal_dict = defaultdict(lambda :1)
                 self.MakeSelection(FisherFile_list)
-                with open('Boundary.tbl', 'a') as BF:
-                    for id in self.Boundary_iden_dict:
-                        for direction in self.Boundary_iden_dict[id]:
-                            BF.write(''.join([id, '\t', direction, '\t', str(self.Boundary_iden_dict[id][direction]), '\n']))
-                with open('TIR_count.tbl', 'a') as TF:
-                    for id in self.Terminal_dict:
-                        TF.write(''.join([id, '\t', str(self.Terminal_dict[id]), '\n']))
 
             ## To merge autonomous insertions and select representatives
-            Auto_fisher_file = ''.join([class_name, '/', '%s.auto.alternative.bed' % class_name])
-            Auto_fisher_bed = BT.BedTool(Auto_fisher_file)
-            ORF_bed = BT.BedTool(''.join([class_name, '/', class_name, '_orf.bed']))
-            Auto_ORF_intersect_file = ''.join([class_name, '/', class_name, 'ORFinterAUTO.bed'])
-            ORF_bed.intersect(Auto_fisher_bed, nonamecheck=True, f=1, wo=True, s=True).saveas(Auto_ORF_intersect_file)
-            pairnamelist = {}
-            if os.path.exists(Auto_fisher_file):
-                pairnamelist = self.merge_overlaped_autos(Auto_ORF_intersect_file, op_representative)
+            pairnamelist = set()
+            if RC_list:
+                ORF_bed = BT.BedTool(''.join([class_name, '/', class_name, '_orf.bed']))
+                Auto_fisher_file = ''.join([class_name, '/', '%s.auto.alternative.bed' % class_name])
+                if os.path.isfile(Auto_fisher_file):
+                    Auto_fisher_bed = BT.BedTool(Auto_fisher_file)
+                else:
+                    Auto_fisher_bed = BT.BedTool([])
+                Auto_ORF_intersect_file = ''.join([class_name, '/', class_name, 'ORFinterAUTO.bed'])
+                ORF_bed.intersect(Auto_fisher_bed, nonamecheck=True, f=1, wo=True, s=True).saveas(Auto_ORF_intersect_file)
+                if os.path.exists(Auto_fisher_file):
+                    pairnamelist = self.merge_overlaped_autos(Auto_ORF_intersect_file, op_representative)
 
             ## To get non-autonomous candidates
             nonauto_bedfile = '%s/Nonauto.bed' % class_name
@@ -1409,11 +1665,19 @@ class Homologous_search:
                 with open(nonauto_alternative_file, 'w') as WF, open(nonauto_bedfile, 'r') as RF:
                     for line in RF:
                         splitlines = line.rstrip().split('\t')
-                        if splitlines[3] in pairnamelist:
-                            newline = '\t'.join([splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4],
-                                                splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto'])
+                        ## To limit outputing nonautonomous candidates who shares the same autonomous boundaries.
+                        if Args.multi_ts:
+                            newline = '\t'.join(
+                                [splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4],
+                                 splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto'])
                             WF.write(newline)
                             WF.write('\n')
+                        else:
+                            if splitlines[3] in pairnamelist or 'pre' in splitlines[3]:
+                                newline = '\t'.join([splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4],
+                                                    splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto'])
+                                WF.write(newline)
+                                WF.write('\n')
 
             ## To merge nonautonomous intervals and do selection.
             if os.path.exists(nonauto_alternative_file):
@@ -1422,20 +1686,31 @@ class Homologous_search:
             ## To integrate orf file into representative file
             # To obtain orf only insertions
             Orfonly_file = ''.join([class_name, '/', '%s.orfonly.alternative.bed' % class_name])
-            with open(op_representative, 'a') as WF, open(Orfonly_file, 'r') as RF:
-                WF.write(RF.read())
+            if os.path.exists(Orfonly_file):
+                with open(op_representative, 'a') as WF, open(Orfonly_file, 'r') as RF:
+                    WF.write(RF.read())
 
-        ## To add terminal markers for Helentrons
+        ## To output boundary check file and tir check file
+        with open('Boundary.tbl', 'w') as BF:
+            for id in self.Boundary_iden_dict:
+                for direction in self.Boundary_iden_dict[id]:
+                    BF.write(''.join([id, '\t', direction, '\t', str(self.Boundary_iden_dict[id][direction]), '\n']))
+        with open('TIR_count.tbl', 'w') as TF:
+            for id in self.Terminal_dict:
+                TF.write(''.join([id, '\t', str(self.Terminal_dict[id]), '\n']))
+
+        ## To add terminal markers for HLE2
         for helen_file in Repsentative_file_list:
-            if re.findall('Helentron', helen_file):
+            if re.findall('HLE2', helen_file):
                 self.heltentron_terminal(helentron_bed=helen_file)
 
         op_representative = 'RC.representative.bed'
         with open(op_representative, 'w') as wf:
             for file in Repsentative_file_list:
-                with open(file, 'r') as rf:
-                    [wf.write(line) for line in rf]
-                os.remove(file)
+                if os.path.exists(file):
+                    with open(file, 'r') as rf:
+                        [wf.write(line) for line in rf]
+                    os.remove(file)
 
         ## To sort big file
         if not os.path.exists(op_representative):
@@ -1451,6 +1726,11 @@ class Homologous_search:
             exit(0)
         sequence_fa = 'RC.representative.fa'
         self.OutputSequence(op_representative, sequence_fa)
+        ## To output convinced pair list.
+        Convinced_pairlist = 'pairlist.tbl'
+        self.Convienced_LTS_RTS(op_representative, Convinced_pairlist)
+
+        ## To remove tempary files
         os.remove(self.CTRR_stem_loop_description)
         os.remove(self.subtir_description)
         os.remove(self.genome_size)
@@ -1468,29 +1748,34 @@ class Homologous_search:
             os.remove('Boundary.identity.tbl')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="heliano can detect and classify different variants of Helitron-like elements: Helitron, Helentron/Helitron2. Please visit https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr")
+    parser = argparse.ArgumentParser(description="heliano can detect and classify different variants of Helitron-like elements: HLE1 and HLE2. Please visit https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr")
     parser.add_argument("-g", "--genome", type=str, required=True, help="The genome file in fasta format.")
     parser.add_argument("-w", "--window", type=int, default=10000, required=False,
                         help="To check terminal signals within a given window bp upstream and downstream of ORF ends, default is 10 kb.")
     parser.add_argument("-dm", "--distance_domain", type=int, default=2500, required=False,
                         help="The distance between HUH and Helicase domain, default is 2500.")
     parser.add_argument("-pt", "--pair_helitron", type=int, default=1, required=False, choices=[0, 1],
-                        help="For Helitron, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default yes.")
+                        help="For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default yes.")
     parser.add_argument("-is1", "--IS1", type=int, default=0, required=False, choices=[0, 1],
-                        help="Set the insertion site of autonomous Helitron as A and T. 0: no, 1: yes. default yes.")
+                        help="Set the insertion site of autonomous HLE1 as A and T. 0: no, 1: yes. default yes.")
     parser.add_argument("-is2", "--IS2", type=int, default=0, required=False, choices=[0, 1],
-                        help="Set the insertion site of autonomous Helentron/Helitron2 as T and T. 0: no, 1: yes. default yes.")
+                        help="Set the insertion site of autonomous HLE2 as T and T. 0: no, 1: yes. default yes.")
     parser.add_argument("-sim_tir", "--simtir", type=int, default=100, required=False, choices=[100, 90, 80],
-                        help="Set the simarity between short inverted repeats(TIRs) of Helitron2/Helentron. Default 100.")
-    parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-3, help="The p-value for fisher's exact test. default is 1e-3.")
+                        help="Set the simarity between short inverted repeats(TIRs) of HLE2. Default 100.")
+    parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-5, help="The p-value for fisher's exact test. default is 1e-5.")
     parser.add_argument("-s", "--score", type=int, required=False, default=32,
-                        help="The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 100, default is 32.")
+                        help="The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 55, default is 32.")
+    parser.add_argument("-ts", "--terminal_sequence", type=str, required=False, default='', help="The terminal sequence file. You can find it in the output of previous run (named as pairlist.tbl).")
+    parser.add_argument("--dis_denovo", action='store_true', required=False,
+                        help="If you use this parameter, you refuse to search for LTS/RTS de novo, instead you will only use the LTS/RTS information described in the terminal sequence file.")
+    parser.add_argument("--multi_ts", action='store_true', required=False,
+                        help="To allow an auto HLE to have multiple terminal sequences. If you enable this, you might find nonauto HLEs coming from the same auto HLE have different terminal sequences.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.0.2')
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.1.0')
     Args = parser.parse_args()
     if int(Args.score) < 30 or int(Args.score) >= 55:
-        print("The bitscore value should be greater than 30 and less than 55.")
+        sys.stderr.write("Error: The bitscore value should be greater than 30 and less than 55.\n")
         exit(0)
     ## To set and check dependency file path
     HMMFILE = '_HMM_'
