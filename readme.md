@@ -16,7 +16,7 @@ Helitron-like elements (HLE1 and HLE2) are DNA transposons. They have been found
 # Note:
 From version 1.1.0, HELIANO will use the term HLE1 to refer to the canonical Helitron and the term HLE2 to refer to the non-canonical Helitrons, including the so called Helitron2 and Helentron. See figure below:
 
-<img src="https://github.com/Zhenlisme/heliano/assets/54898847/32b1ba39-3d4c-428f-8dda-fdde63c50003" width="680" height="400">
+<img src="https://github.com/Zhenlisme/heliano/assets/54898847/32b1ba39-3d4c-428f-8dda-fdde63c50003" width="680" height="420">
 
 # Dependencies
 ```
