@@ -19,7 +19,7 @@ See figure below:
 
 <img src="https://github.com/Zhenlisme/heliano/assets/54898847/32b1ba39-3d4c-428f-8dda-fdde63c50003" width="660" height="420">
 
-2) From version 1.1.0, users are allowed to input a pair file as a complementary for LTS-RTS pair information. This will help a lot to search for HLEs in close species.
+2) From version 1.1.0, users are allowed to input a pair file as a complementary for LTS-RTS pair information. This will help a lot to search for HLEs in close species. More information see (#usage).
 # Dependencies
 ```
 - python = 3.9.0
