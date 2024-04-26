@@ -79,12 +79,12 @@ Before installation , you need to be sure that all dependencies have been instal
 `heliano -h`
 ```
 usage: heliano [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE]
-               [-s SCORE] -o OPDIR [-n PROCESS] [-v]
+               [-s SCORE] [-ts TERMINAL_SEQUENCE] [--dis_denovo] [--multi_ts] -o OPDIR [-n PROCESS] [-v]
 
 heliano can detect and classify different variants of Helitron-like elements: HLE1 and HLE2. Please visit
 https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -g GENOME, --genome GENOME
                         The genome file in fasta format.
@@ -93,8 +93,8 @@ optional arguments:
   -dm DISTANCE_DOMAIN, --distance_domain DISTANCE_DOMAIN
                         The distance between HUH and Helicase domain, default is 2500.
   -pt {0,1}, --pair_helitron {0,1}
-                        For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes.
-                        default yes.
+                        For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1:
+                        yes. default yes.
   -is1 {0,1}, --IS1 {0,1}
                         Set the insertion site of autonomous HLE1 as A and T. 0: no, 1: yes. default yes.
   -is2 {0,1}, --IS2 {0,1}
@@ -102,10 +102,16 @@ optional arguments:
   -sim_tir {100,90,80}, --simtir {100,90,80}
                         Set the simarity between short inverted repeats(TIRs) of HLE2. Default 100.
   -p PVALUE, --pvalue PVALUE
-                        The p-value for fisher's exact test. default is 1e-3.
+                        The p-value for fisher's exact test. default is 1e-5.
   -s SCORE, --score SCORE
-                        The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 100, default is
-                        32.
+                        The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 55,
+                        default is 32.
+  -ts TERMINAL_SEQUENCE, --terminal_sequence TERMINAL_SEQUENCE
+                        The terminal sequence file. You can find it in the output of previous run (named as pairlist.tbl).
+  --dis_denovo          If you use this parameter, you refuse to search for LTS/RTS de novo, instead you will only use the LTS/RTS
+                        information described in the terminal sequence file.
+  --multi_ts            To allow an auto HLE to have multiple terminal sequences. If you enable this, you might find nonauto HLEs coming
+                        from the same auto HLE have different terminal sequences.
   -o OPDIR, --opdir OPDIR
                         The output directory.
   -n PROCESS, --process PROCESS
