@@ -122,6 +122,7 @@ Perform the following code:
 You will find two main result files when HELIANO program runs successfully.
 1. RC.representative.bed: the predicted HLE1/HLE2 coordinates in bed format (available in the file test.opt.tbl in this repository).
 2. RC.representative.fa: the predicted HLE1/HLE2 sequences in fasta format.
+3. pairlist.tbl: The file for LTS-RTS pair information.
 Other files or directories are intermediate outputs.
 1. TIR_count.tbl: Table for counts of terminal inverted repeats of each HLE subfamily.
 2. Boundary.tbl: Table for the conservation of flanking regions of each HLE subfamily.
