@@ -16,7 +16,7 @@ Helitron-like elements (HLE1 and HLE2) are DNA transposons. They have been found
 - [To contact us](#to-contact-us)
 
 # Note:
-From version 1.1.0, HELIANO will use the term HLE1 to refer to the canonical Helitron (called Helitron in v1.0.2) and the term HLE2 to refer to the non-canonical Helitrons (called Helentron in v1.0.2). See figure below:
+From version 1.1.0, HELIANO will use the term HLE1 to refer to the canonical Helitron (called Helitron in v1.0.2) and the term HLE2 to refer to the non-canonical Helitrons (called HLE2 in v1.0.2). See figure below:
 
 <img src="https://github.com/Zhenlisme/heliano/assets/54898847/32b1ba39-3d4c-428f-8dda-fdde63c50003" width="680" height="420">
 
@@ -83,7 +83,7 @@ Before installation , you need to be sure that all dependencies have been instal
 usage: heliano [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE]
                [-s SCORE] -o OPDIR [-n PROCESS] [-v]
 
-heliano can detect and classify different variants of Helitron-like elements: Helitron, Helentron/Helitron2. Please visit
+heliano can detect and classify different variants of Helitron-like elements: HLE1 and HLE2. Please visit
 https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr
 
 optional arguments:
@@ -95,14 +95,14 @@ optional arguments:
   -dm DISTANCE_DOMAIN, --distance_domain DISTANCE_DOMAIN
                         The distance between HUH and Helicase domain, default is 2500.
   -pt {0,1}, --pair_helitron {0,1}
-                        For Helitron, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes.
+                        For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes.
                         default yes.
   -is1 {0,1}, --IS1 {0,1}
-                        Set the insertion site of autonomous Helitron as A and T. 0: no, 1: yes. default yes.
+                        Set the insertion site of autonomous HLE1 as A and T. 0: no, 1: yes. default yes.
   -is2 {0,1}, --IS2 {0,1}
-                        Set the insertion site of autonomous Helentron/Helitron2 as T and T. 0: no, 1: yes. default yes.
+                        Set the insertion site of autonomous HLE2 as T and T. 0: no, 1: yes. default yes.
   -sim_tir {100,90,80}, --simtir {100,90,80}
-                        Set the simarity between short inverted repeats(TIRs) of Helitron2/Helentron. Default 100.
+                        Set the simarity between short inverted repeats(TIRs) of HLE2. Default 100.
   -p PVALUE, --pvalue PVALUE
                         The p-value for fisher's exact test. default is 1e-3.
   -s SCORE, --score SCORE
@@ -120,28 +120,28 @@ Perform the following code:
 `heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000`
 ### 4. HELIANO outputs
 You will find two main result files when HELIANO program runs successfully.
-1. RC.representative.bed: the predicted Helitron/Helentron coordinates in bed format (available in the file test.opt.tbl in this repository).
-2. RC.representative.fa: the predicted Helitron/Helentron sequences in fasta format.
+1. RC.representative.bed: the predicted HLE1/HLE2 coordinates in bed format (available in the file test.opt.tbl in this repository).
+2. RC.representative.fa: the predicted HLE1/HLE2 sequences in fasta format.
 Other files or directories are intermediate outputs.
 1. TIR_count.tbl: Table for counts of terminal inverted repeats of each HLE subfamily.
 2. Boundary.tbl: Table for the conservation of flanking regions of each HLE subfamily.
-3. Helitron/ or Helentron/: Directory for intermediate files when detecting Helitron/Helentron.
+3. HLE1/ or HLE2/: Directory for intermediate files when detecting HLE1/HLE2.
 ##### Explanation for RC.representative.bed
 There are 11 columns in RC.representative.bed file:  
 |chrm-id|start|end|subfamily|occurence|strand|pvalue|TS_blastn_identity|variant|type|name|
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-|CP128282.1|53617|59046|Helentron_left_18-Helentron_right_18|7|-|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_1|
-|CP128282.1|83425|88824|Helentron_left_18-Helentron_right_18|7|-|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_2|
-|CP128282.1|94525|99924|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_3|
-|CP128282.1|306838|312276|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_4|
-|CP128282.1|665681|668554|Helentron_left_33-Helentron_right_32|3|-|1.3547e-05|60|Helentron|nonauto|insertion_Helentron_nonauto_1|
-|CP128282.1|668719|671599|Helentron_left_33-Helentron_right_32|3|+|1.3547e-05|60|Helentron|nonauto|insertion_Helentron_nonauto_2|
-|CP128282.1|855863|858738|Helentron_left_33-Helentron_right_32|3|+|1.3547e-05|60|Helentron|nonauto|insertion_Helentron_nonauto_3|
-|CP128282.1|855863|880806|Helentron_left_33-Helentron_right_32|3|+|1.3547e-05|60|Helentron|auto|insertion_Helentron_auto_5|
-|CP128282.1|926221|928267|CP128282.1-926221-928267|1|-|1|0|Helentron|orfonly|insertion_Helentron_orfonly_1|
-|CP128282.1|963556|968985|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_6|
-|CP128282.1|1107206|1112635|Helentron_left_18-Helentron_right_18|7|+|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_7|
-|CP128282.1|1259412|1264991|Helentron_left_18-Helentron_right_18|7|-|6.3390e-07|60|Helentron|auto|insertion_Helentron_auto_8|
+|CP128282.1|53617|59046|HLE2_left_18-HLE2_right_18|7|-|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_1|
+|CP128282.1|83425|88824|HLE2_left_18-HLE2_right_18|7|-|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_2|
+|CP128282.1|94525|99924|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_3|
+|CP128282.1|306838|312276|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_4|
+|CP128282.1|665681|668554|HLE2_left_33-HLE2_right_32|3|-|1.3547e-05|60|HLE2|nonauto|insertion_HLE2_nonauto_1|
+|CP128282.1|668719|671599|HLE2_left_33-HLE2_right_32|3|+|1.3547e-05|60|HLE2|nonauto|insertion_HLE2_nonauto_2|
+|CP128282.1|855863|858738|HLE2_left_33-HLE2_right_32|3|+|1.3547e-05|60|HLE2|nonauto|insertion_HLE2_nonauto_3|
+|CP128282.1|855863|880806|HLE2_left_33-HLE2_right_32|3|+|1.3547e-05|60|HLE2|auto|insertion_HLE2_auto_5|
+|CP128282.1|926221|928267|CP128282.1-926221-928267|1|-|1|0|HLE2|orfonly|insertion_HLE2_orfonly_1|
+|CP128282.1|963556|968985|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_6|
+|CP128282.1|1107206|1112635|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_7|
+|CP128282.1|1259412|1264991|HLE2_left_18-HLE2_right_18|7|-|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_8|
 ##### Detailed explaination for each column.
 Notice: The insertions that encode Rep/helicase are considered putative autonomous HLEs.
 |Columns|Explaination|
@@ -154,7 +154,7 @@ Notice: The insertions that encode Rep/helicase are considered putative autonomo
 |strand|the insertion is on which strand|
 |pvalue|pvalue of fisher's exact test, indicating the significance of the prediction. The lower, the more significant.|
 |TS_blastn_identity|the average identity of RTS and LTS to their representative counterparts|
-|variant|the insertion is Helitron or Helentron|
+|variant|the insertion is HLE1 or HLE2|
 |type|the mobility of HLE, either autonomous (auto) or nonautonomous (nonauto)|
 |name|unique identifier for each insertion|
 ### 5. Generation for consensus sequences
@@ -188,7 +188,7 @@ Li Z , Pollet N. "HELIANO: a Helitron-like element annotator." Zenodo (2024). [d
 ### 1. How to get fragmented copies of HLEs?
 HELIANO is designed to predict complete insertions of Helitron-like elements (HLE), with the limitation that fragmented insertions will not be reported. To identify fragmented insertions, we recommend running RepeatMasker or BLASTN using HELIANO predictions as the query. Before you run RepeatMasker or BLASTN, we suggest mask the HLE query with a trusted non-HLE TE database because other non-HLE TEs might insert into long HLEs which would inflates sequence length and result in misannotation.
 ### 2. How to choose parameters properly?
-For a precise and quick search, you can use the strigent parameter '-pt 1 -is1 1 -is2 1 -p 1e-5 -s 30 -pt 1 -sim_tir 100' that considered the preferred insertion sites of HLE. For big or complex genomes (e.g., maize genome), I just recommed you use the strigent parameter set. But not all HLEs obey their regular preferring insertion sites. If you want to explore more in your interested genome, you can use the loose parameter set, e.g., '-is1 0 -is2 0 -sim_tir 90', and you will have more predictions and longer execution time. Note that the parameters 'is2' and '-sim_tir' are only for Helentrons, and 'is1' and '-pt' are only for Helitrons.
+For a precise and quick search, you can use the strigent parameter '-pt 1 -is1 1 -is2 1 -p 1e-5 -s 30 -pt 1 -sim_tir 100' that considered the preferred insertion sites of HLE. For big or complex genomes (e.g., maize genome), I just recommed you use the strigent parameter set. But not all HLEs obey their regular preferring insertion sites. If you want to explore more in your interested genome, you can use the loose parameter set, e.g., '-is1 0 -is2 0 -sim_tir 90', and you will have more predictions and longer execution time. Note that the parameters 'is2' and '-sim_tir' are only for HLE2s, and 'is1' and '-pt' are only for Helitrons.
 # To contact us
 For any questions, please open an issue in the 'issues' section or email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
 
