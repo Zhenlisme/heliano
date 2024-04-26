@@ -192,7 +192,7 @@ optional arguments:
 Since version 1.1.0, HELIANO enables prediction of HLEs with the help of pre-identified LTS-RTS pair file.
 The `pairlist.tbl` can be either obtained from main directory of your previous run or user-defined.
 
-You can skip denovo prediction of LTS-RTS pair process (will save a lot of time) 
+You can skip denovo prediction of LTS-RTS pair process (will save a lot of time),
 ```
 heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000 --ts pairlist.tbl --dis_denovo
 ```
