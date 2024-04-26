@@ -19,7 +19,7 @@ See figure below:
 
 <img src="https://github.com/Zhenlisme/heliano/assets/54898847/32b1ba39-3d4c-428f-8dda-fdde63c50003" width="660" height="420">
 
-2) From version 1.1.0, users are allowed to input a pair file as a complementary for LTS-RTS pair information. This will help a lot to search for HLEs in close species. More information see [here](###6.-Dis-denovo-prediction).
+2) From version 1.1.0, users are allowed to input a pair file as a complementary for LTS-RTS pair information. This will help a lot to search for HLEs in close species. More information see [here](#Dis-denovo-prediction).
 # Dependencies
 ```
 - python = 3.9.0
@@ -75,9 +75,9 @@ Before installation , you need to be sure that all dependencies have been instal
    `bash configure.sh`
 4. You can find HELIANO in the bin directory.
 # Usage
-### 1. Activate the HELIANO conda environment (for conda/mamba installation)  
+### Activate the HELIANO conda environment (for conda/mamba installation)  
 `conda activate HELIANO`
-### 2. Check the HELIANO binary  
+### Check the HELIANO binary  
 `heliano -h`
 ```
 usage: heliano [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE]
@@ -120,11 +120,11 @@ options:
                         Maximum of threads to be used.
   -v, --version         show program's version number and exit
 ```
-### 3. Perform a test run of HELIANO  
+### Perform a test run of HELIANO  
 ##### Here we will use the chromosome 18 of Fusarium oxysporum strain Fo5176 as an example, where you can find it in file test.fa .
 Perform the following code:
 `heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000`
-### 4. HELIANO outputs
+### HELIANO outputs
 You will find two main result files when HELIANO program runs successfully.
 1. RC.representative.bed: the predicted HLE1/HLE2 coordinates in bed format (available in the file test.opt.tbl in this repository).
 2. RC.representative.fa: the predicted HLE1/HLE2 sequences in fasta format.
@@ -164,7 +164,7 @@ Notice: The insertions that encode Rep/helicase are considered putative autonomo
 |variant|the insertion is HLE1 or HLE2|
 |type|the mobility of HLE, either autonomous (auto) or nonautonomous (nonauto)|
 |name|unique identifier for each insertion|
-### 5. Generation for consensus sequences
+### Generation for consensus sequences
 The HELIANO package also provides a program (heliano_cons) for generating consensus sequences of HLE.  
 Check the usage of heliano_cons:  
 `heliano_cons -h`
@@ -185,7 +185,7 @@ optional arguments:
                         Maximum of threads to be used.
   -v, --version         show program's version number and exit
 ```
-### 6. Dis-denovo prediction
+### Dis-denovo prediction
 Prediction of HLEs with the help of pre-identified LTS-RTS pair file
 When you are working on a couple of close species, you might find that some pecies contains no autonomous HLEs which will influence the prediction of nonautonomous HLEs.
 ```
