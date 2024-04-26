@@ -9,7 +9,7 @@ Helitron-like elements (HLE1 and HLE2) are DNA transposons. They have been found
   * [mamba](#mamba)
   * [Manual installation](#manual-installation)
 - [Usage](#usage)
-     - [Test](#Perform-a-test-run-of-HELIANO)
+     - [Test run](#Perform-a-test-run-of-HELIANO)
      - [Making Consensus](#Generation-for-consensus-sequences)
      - [Dis-denovo prediction](#Dis-denovo-prediction)
 - [References](#References)
