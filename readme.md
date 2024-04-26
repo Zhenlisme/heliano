@@ -186,11 +186,12 @@ optional arguments:
   -v, --version         show program's version number and exit
 ```
 ### Dis-denovo prediction
-Prediction of HLEs with the help of pre-identified LTS-RTS pair file
-When you are working on a couple of close species, you might find that some pecies contains no autonomous HLEs which will influence the prediction of nonautonomous HLEs.
+Since version 1.1.0, HELIANO enables prediction of HLEs with the help of pre-identified LTS-RTS pair file.
+
 ```
 heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000 --ts pairlist.tbl --dis_denovo
 ```
+The `pairlist.tbl` can be either obtained from main directory of your previous run or user-defined.
 Or
 ```
 heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000 --ts pairlist.tbl
