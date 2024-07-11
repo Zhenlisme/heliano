@@ -17,12 +17,12 @@ Helitron-like elements (HLE1 and HLE2) are DNA transposons. They have been found
 - [To contact us](#to-contact-us)
 
 # Update Note:
-1) Since version 1.1.0, HELIANO will use the term HLE1 to refer to the canonical Helitron (called Helitron in v1.0.2) and the term HLE2 to refer to the Helentron/Helitron2 (called Helentron in v1.0.2). 
+1) Since version 1.1.0, HELIANO will use the term HLE1 to refer to the canonical Helitron (called Helitron in v1.0.2) and the term HLE2 to refer to the non-canonical Helitrons (called HLE2 in v1.0.2). 
 See figure below:
 
 <img src="https://github.com/Zhenlisme/heliano/assets/54898847/32b1ba39-3d4c-428f-8dda-fdde63c50003" width="660" height="420">
 
-2) From version 1.1.0, users are allowed to input a pair file as a complementary for LTS-RTS pair information. This will help a lot to search for HLEs in closely related species. More information see [here](#Dis-denovo-prediction).
+2) From version 1.1.0, users are allowed to input a pair file as a complementary for LTS-RTS pair information. This will help a lot to search for HLEs in close species. More information see [here](#Dis-denovo-prediction).
 # Dependencies
 ```
 - python = 3.9.0
@@ -213,6 +213,3 @@ HELIANO is designed to predict complete insertions of Helitron-like elements (HL
 For a precise and quick search, you can use the strigent parameter '-pt 1 -is1 1 -is2 1 -p 1e-5 -s 30 -pt 1 -sim_tir 100' that considered the preferred insertion sites of HLE. For big or complex genomes (e.g., maize genome), I just recommed you use the strigent parameter set. But not all HLEs obey their regular preferring insertion sites. If you want to explore more in your interested genome, you can use the loose parameter set, e.g., '-is1 0 -is2 0 -sim_tir 90', and you will have more predictions and longer execution time. Note that the parameters 'is2' and '-sim_tir' are only for HLE2s, and 'is1' and '-pt' are only for Helitrons.
 # To contact us
 For any questions, please open an issue in the 'issues' section or email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
-
-
-

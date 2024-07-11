@@ -3,7 +3,6 @@
 import os, re, subprocess, sys, argparse, shutil, random, gc
 from Bio import SeqIO
 from multiprocessing.pool import ThreadPool
-#from multiprocessing import Pool
 from collections import defaultdict
 import pybedtools as BT
 
@@ -153,7 +152,7 @@ class Structure_search:
 
 # define Homologous_search class to find Helitron-like transposase domain and theri auto/non-auto relatives
 class Homologous_search:
-    def __init__(self, rep_hel_hmm, genome, wkdir, headerfile, window, distance_domain, pvalue, process_num):
+    def __init__(self, rep_hel_hmm, genome, wkdir, headerfile, window, distance_domain, distance_na, pvalue, process_num):
         self.rep_hel_hmm = rep_hel_hmm
         self.genome = genome
         self.genome_dict = SeqIO.parse(genome, 'fasta')
@@ -163,6 +162,7 @@ class Homologous_search:
         self.headerpatternfile = headerfile
         self.window = window
         self.distance_domain = distance_domain
+        self.distance_na = defaultdict(lambda :int(distance_na))
         self.pvalue = float(pvalue)
         if Args.terminal_sequence:
             self.pairfile = os.path.abspath(Args.terminal_sequence)
@@ -499,7 +499,7 @@ class Homologous_search:
                 if extend_id.endswith('p'):
                     stem_loop = [i for i in stem_loop_dict[extend_id] if i[5] == '+']
                     ## order by start position (closer), stem length (longer), loop length (shorter),  total length (shorter)
-                    if classname == 'HLE2':
+                    if '.2' not in classname:
                         stem_loop = sorted(stem_loop, key = lambda x: [x[0], int(x[1]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
                         if stem_loop:
                             stem_start, stem_stop = stem_loop[0][1:3]
@@ -519,7 +519,7 @@ class Homologous_search:
                 else:
                     stem_loop = [i for i in stem_loop_dict[extend_id] if i[5] == '-']
                     ## order by end position (longer), stem length (longer), loop length (shorter), total length (shorter)
-                    if classname == 'HLE2':
+                    if '.2' not in classname:
                         stem_loop = sorted(stem_loop, key=lambda x: [x[0], -int(x[2]), -int(x[3]), int(x[4]), int(x[2]) - int(x[1])])
                         if stem_loop:
                             stem_start, stem_stop = stem_loop[0][1:3]
@@ -877,21 +877,37 @@ class Homologous_search:
         os.remove(blastn_opt)
         return 1
 
-    def merge_overlaped_intervals(self, bedinput, represent_bed):
+    def merge_overlaped_intervals(self, bedinput, represent_bed, alt_optbed, rep_type = True):
         # To merge overlaped nonautonomous candidates
         True_pair_list = []
-        with open(bedinput, 'r') as RF, open(represent_bed, 'a') as WFr:
-            compared_line =  RF.readline().rstrip().split('\t')
-            if len(compared_line) <= 1:
+        with open(bedinput, 'r') as RF, open(represent_bed, 'a') as WFr, open(alt_optbed, 'a') as WFalt:
+            ### To output alternative insertions and extract first line
+            EMPTY_DEDUCE=0
+            for line in RF:
+                EMPTY_DEDUCE=1
+                splitlines = line.rstrip().split('\t')
+                chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type = splitlines
+                mobile_type, altype = mobile_type.split('-')
+                if altype == 'alt' and rep_type:
+                    WFalt.write(line)
+                    continue
+                else:
+                    break
+            if not EMPTY_DEDUCE:
                 return {}
-            chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type = compared_line
-            alternative_bedlines = [compared_line]
+            alternative_bedlines = [[chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type]]
             compared_line = (chrmid, start, stop, strand)
             blockname_init = 1
 
             output_recorder = {}
             for line in RF:
                 chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type = line.rstrip().split('\t')
+                mobile_type, altype = mobile_type.split('-')
+                ### To output alternative insertions
+                if altype == 'alt' and rep_type:
+                    WFalt.write(line)
+                    continue
+
                 newline = [chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type]
                 Intersection_deduce = self.intersect(compared_line[1:3], [start, stop], lportion=0.8, rportion=0.8, bool_and=0)
                 if compared_line[0] == chrmid and Intersection_deduce:
@@ -904,6 +920,8 @@ class Homologous_search:
                     output_recorder[block_name]=1
                     ## Begin to output the former to alternative file
                     [i.append(block_name) for i in alternative_bedlines]
+                    if mobile_type=='auto':
+                        print('blocks', alternative_bedlines)
                     ## Try to select a representative from these alternatives.
                     RC_list = self.filter(alternative_bedlines, classname=classname, mobile_type=mobile_type)
                     if RC_list:
@@ -928,13 +946,26 @@ class Homologous_search:
                         True_pair_list.append(line[3])
         return set(True_pair_list)
 
-    def merge_overlaped_autos(self, bedinput, represent_bed):
+    def merge_overlaped_autos(self, bedinput, represent_bed, alt_optbed, rep_type = True):
         True_pair_list = []
-        with open(bedinput, 'r') as RF, open(represent_bed, 'a') as WF:
-            splitlines = RF.readline().rstrip().split('\t')
-            if len(splitlines) <= 1:
+
+        with open(bedinput, 'r') as RF, open(represent_bed, 'a') as WF, open(alt_optbed, 'a') as WFalt:
+            ### To output alternative insertions and extract first line
+            EMPTY_DEDUCE=0
+            for line in RF:
+                EMPTY_DEDUCE=1
+                splitlines = line.rstrip().split('\t')
+                chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type = splitlines[6:16]
+                mobile_type, altype = mobile_type.split('-')
+                splitlines[15] = mobile_type
+                if altype == 'alt' and rep_type:
+                    WFalt.write(line)
+                    continue
+                else:
+                    break
+            if not EMPTY_DEDUCE:
                 return {}
-            chrmid, start, stop, pairname, count, strand, pvalue, Bscore, classname, mobile_type = splitlines[6:16]
+        
             last_orfid = splitlines[3]
             alternative_bedlines = [splitlines[6:16]]
             blockname_init = 1
@@ -942,6 +973,13 @@ class Homologous_search:
             for line in RF:
                 splitlines = line.rstrip().split('\t')
                 orfid = splitlines[3]
+                mobile_type=splitlines[15]
+                mobile_type, altype = mobile_type.split('-')
+                splitlines[15] = mobile_type
+                ### To output alternative insertions
+                if altype == 'alt' and rep_type:
+                    WFalt.write(line)
+                    continue
                 if orfid == last_orfid:
                     alternative_bedlines.append(splitlines[6:16])
                 else:
@@ -1170,8 +1208,9 @@ class Homologous_search:
         max_orf_length = sorted(ORF_length_list)[-1]
         distance_na = int(self.window) * 2 + max_orf_length
         half_distance = int(round(int(distance_na) / 2, 0))
-        sys.stdout.write('The length of %s is expected to be shorter than %s.\n' % (classname, str(distance_na + 100)))
-
+        self.distance_na[classname] = distance_na if not self.distance_na[classname] else self.distance_na[classname]  ## If specified, will use the specified one.
+        sys.stdout.write('The length of autonomous %s is expected to be shorter than %s.\n' % (classname, str(distance_na + 100)))
+        sys.stdout.write('The length of nonautonomous %s is expected to be shorter than %s.\n' % (classname, str(self.distance_na[classname] + 100)))
         ## To run blastn to get homologies
         left_beddir, right_beddir = 'SubBlastnBed/%s_left' % classname, 'SubBlastnBed/%s_right' % classname
         if not os.path.exists(left_beddir):
@@ -1206,10 +1245,11 @@ class Homologous_search:
             shutil.rmtree(bed_optdir)
         os.mkdir(bed_optdir)
 
+        Strategy = '1' if Args.nearest else '0'
         try:
             fisher_program = subprocess.Popen(
                 ['Rscript', FISHER_PRO, BEDTOOLS_PATH, self.genome_size, joint_filepath_blastn, bed_optdir,
-                str(self.process_num), str(self.pvalue)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                str(self.process_num), str(self.pvalue), ORF_bedfile, Strategy], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             fisher_program.wait()
             sys.stdout.write("Fisher's exact test finished for %s!\n" % classname)
         except:
@@ -1244,6 +1284,7 @@ class Homologous_search:
         orf_fisher_bed = fisher_pvalue_bed.intersect(ORF_bed, nonamecheck=True, F=1, wa=True, s=True, c=True).saveas('Fisher_with_ORF.bed')
         ## To select the intervals that contain only one ORF
         auto_alternative_file = ''.join([classname, '.auto.alternative.bed'])
+        
         with open(auto_alternative_file, 'w') as WF:
             with open('Fisher_with_ORF.bed', 'r') as f1:
                 for line in f1:
@@ -1252,7 +1293,7 @@ class Homologous_search:
                         splitlines = line.rstrip().split('\t')
                         newline = '\t'.join(
                             [splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4], splitlines[5],
-                             splitlines[6], splitlines[7], classname, 'auto'])
+                             splitlines[6], splitlines[7], classname, 'auto-%s'%splitlines[8]])
                         WF.write(newline)
                         WF.write('\n')
 
@@ -1527,10 +1568,13 @@ class Homologous_search:
         if not os.path.exists(classname):
             os.mkdir(classname)
         os.chdir(classname)
+        ORF_bedfile = ''.join([classname, '_orf.bed'])
         ## To evaluate the size range
         distance_na = int(self.window) * 2
         half_distance = int(round(int(distance_na) / 2, 0))
-        sys.stdout.write('The length of %s is expected to be shorter than %s.\n' % (classname, str(distance_na + 100)))
+        self.distance_na[classname] = distance_na if not self.distance_na[classname] else self.distance_na[classname]  ## If specified, will use the specified one.
+        sys.stdout.write('The length of autonomous %s is expected to be shorter than %s.\n' % (classname, str(distance_na + 100)))
+        sys.stdout.write('The length of nonautonomous %s is expected to be shorter than %s.\n' % (classname, str(self.distance_na[classname] + 100)))
         ## To run blastn to get homologies
         left_beddir, right_beddir = 'SubBlastnBed/%s_left' % classname, 'SubBlastnBed/%s_right' % classname
         if not os.path.exists(left_beddir):
@@ -1564,11 +1608,11 @@ class Homologous_search:
         if os.path.exists(bed_optdir):
             shutil.rmtree(bed_optdir)
         os.mkdir(bed_optdir)
-
+        Strategy = '1' if Args.nearest else '0'
         try:
             fisher_program = subprocess.Popen(
                 ['Rscript', FISHER_PRO, BEDTOOLS_PATH, self.genome_size, joint_filepath_blastn, bed_optdir,
-                 str(self.process_num), str(self.pvalue)], stdout=subprocess.DEVNULL)
+                 str(self.process_num), str(self.pvalue), ORF_bedfile, Strategy], stdout=subprocess.DEVNULL)
             fisher_program.wait()
             sys.stdout.write("Fisher's exact test finished for %s!\n" % classname)
         except:
@@ -1596,7 +1640,7 @@ class Homologous_search:
             exit(0)
         fisher_pvalue_bed = BT.BedTool(fisher_pvalue_file).saveas('Nonauto.bed')
         os.chdir('../')
-
+        
     def main(self):
         self.Boundary_iden_dict = defaultdict(lambda: defaultdict(lambda: 1))
         self.Terminal_dict = defaultdict(lambda: 1)
@@ -1614,12 +1658,20 @@ class Homologous_search:
             classname_list.extend(unique_pre_ts_classname)
 
         Repsentative_file_list = []
+        Alternative_file_list = []
         ## Loop for each variants.
         for class_name in classname_list:
             op_representative = '%s.representative.bed' % class_name
+            opauto_nest_alt = '%s.auto.nest.alt.bed' % class_name
+            opnonauto_nest_alt = '%s.nonauto.nest.alt.bed' % class_name
+            op_nest_rep = '%s.nest.bed' % class_name
+
             if os.path.exists(op_representative):
                 os.remove(op_representative)
             Repsentative_file_list.append(op_representative)
+            if os.path.exists(op_nest_rep):
+                os.remove(op_nest_rep)
+            Alternative_file_list.append(op_nest_rep)
 
             FisherFile_list = []
             Auto_file_list = []
@@ -1649,14 +1701,19 @@ class Homologous_search:
             if RC_list:
                 ORF_bed = BT.BedTool(''.join([class_name, '/', class_name, '_orf.bed']))
                 Auto_fisher_file = ''.join([class_name, '/', '%s.auto.alternative.bed' % class_name])
+
                 if os.path.isfile(Auto_fisher_file):
                     Auto_fisher_bed = BT.BedTool(Auto_fisher_file)
                 else:
                     Auto_fisher_bed = BT.BedTool([])
                 Auto_ORF_intersect_file = ''.join([class_name, '/', class_name, 'ORFinterAUTO.bed'])
                 ORF_bed.intersect(Auto_fisher_bed, nonamecheck=True, f=1, wo=True, s=True).saveas(Auto_ORF_intersect_file)
+
                 if os.path.exists(Auto_fisher_file):
-                    pairnamelist = self.merge_overlaped_autos(Auto_ORF_intersect_file, op_representative)
+                    pairnamelist = self.merge_overlaped_autos(Auto_ORF_intersect_file, op_representative, opauto_nest_alt, rep_type=True)
+                    ## To output alternative nest insertions
+                    if os.path.exists(opauto_nest_alt):
+                        self.merge_overlaped_autos(opauto_nest_alt, op_nest_rep, 'tmp.txt', rep_type=False)
 
             ## To get non-autonomous candidates
             nonauto_bedfile = '%s/Nonauto.bed' % class_name
@@ -1665,30 +1722,40 @@ class Homologous_search:
                 with open(nonauto_alternative_file, 'w') as WF, open(nonauto_bedfile, 'r') as RF:
                     for line in RF:
                         splitlines = line.rstrip().split('\t')
+                        ## To filter out ultra-large nonautonomous
+                        if int(splitlines[2]) - int(splitlines[1]) + 1 > self.distance_na[class_name] + 100:
+                            continue
                         ## To limit outputing nonautonomous candidates who shares the same autonomous boundaries.
                         if Args.multi_ts:
                             newline = '\t'.join(
                                 [splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4],
-                                 splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto'])
+                                 splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto-%s'%splitlines[8]])
                             WF.write(newline)
                             WF.write('\n')
                         else:
                             if splitlines[3] in pairnamelist or 'pre' in splitlines[3]:
                                 newline = '\t'.join([splitlines[0], splitlines[1], splitlines[2], splitlines[3], splitlines[4],
-                                                    splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto'])
+                                                    splitlines[5], splitlines[6], splitlines[7], class_name, 'nonauto-%s'%splitlines[8]])
                                 WF.write(newline)
                                 WF.write('\n')
 
             ## To merge nonautonomous intervals and do selection.
             if os.path.exists(nonauto_alternative_file):
-                self.merge_overlaped_intervals(nonauto_alternative_file, op_representative)
-
+                self.merge_overlaped_intervals(nonauto_alternative_file, op_representative, opnonauto_nest_alt, rep_type=True)
+                ## To output alternative nest insertions
+                if os.path.exists(opnonauto_nest_alt):
+                    self.merge_overlaped_intervals(opnonauto_nest_alt, op_nest_rep, 'tmp.txt', rep_type=False)
             ## To integrate orf file into representative file
             # To obtain orf only insertions
             Orfonly_file = ''.join([class_name, '/', '%s.orfonly.alternative.bed' % class_name])
             if os.path.exists(Orfonly_file):
                 with open(op_representative, 'a') as WF, open(Orfonly_file, 'r') as RF:
                     WF.write(RF.read())
+            ## Remove intermediate files
+            if os.path.exists(opauto_nest_alt):
+                os.remove(opauto_nest_alt)
+            if os.path.exists(opnonauto_nest_alt):
+                os.remove(opnonauto_nest_alt)
 
         ## To output boundary check file and tir check file
         with open('Boundary.tbl', 'w') as BF:
@@ -1704,9 +1771,20 @@ class Homologous_search:
             if re.findall('HLE2', helen_file):
                 self.heltentron_terminal(helentron_bed=helen_file)
 
+        if os.path.exists('tmp.txt'):
+            os.remove('tmp.txt')
+
         op_representative = 'RC.representative.bed'
         with open(op_representative, 'w') as wf:
             for file in Repsentative_file_list:
+                if os.path.exists(file):
+                    with open(file, 'r') as rf:
+                        [wf.write(line) for line in rf]
+                    os.remove(file)
+
+        op_alternative = 'RC.alternative.bed'
+        with open(op_alternative, 'w') as wf:
+            for file in Alternative_file_list:
                 if os.path.exists(file):
                     with open(file, 'r') as rf:
                         [wf.write(line) for line in rf]
@@ -1716,15 +1794,28 @@ class Homologous_search:
         if not os.path.exists(op_representative):
             with open(op_representative, 'w') as F:
                 F.write('')
+        if not os.path.exists(op_alternative):
+            with open(op_alternative, 'w') as F:
+                F.write('')
         try:
             sort_pro = subprocess.Popen(['bash', SORT_PRO, op_representative, str(self.process_num)],
                                         stdout=subprocess.DEVNULL)
             sort_pro.wait()
             sys.stdout.write("Sort representative files finished ...\n")
+
+            sort_pro = subprocess.Popen(['bash', SORT_PRO, op_alternative, str(self.process_num)],
+                                        stdout=subprocess.DEVNULL)
+            sort_pro.wait()
+            sys.stdout.write("Sort alternative files finished ...\n")
+
         except:
             sys.stdout.write("Sort representative files failed ...\n")
             exit(0)
         sequence_fa = 'RC.representative.fa'
+        ## Delete alternative file if empty
+        if not os.path.getsize(op_alternative):
+            os.remove(op_alternative)
+        ## To output fasta format file.
         self.OutputSequence(op_representative, sequence_fa)
         ## To output convinced pair list.
         Convinced_pairlist = 'pairlist.tbl'
@@ -1754,6 +1845,8 @@ if __name__ == "__main__":
                         help="To check terminal signals within a given window bp upstream and downstream of ORF ends, default is 10 kb.")
     parser.add_argument("-dm", "--distance_domain", type=int, default=2500, required=False,
                         help="The distance between HUH and Helicase domain, default is 2500.")
+    parser.add_argument("-dn", "--distance_ts", type=int, default=0, required=False,
+                        help="The maximum distance between LTS and RTS. If not specified, HELIANO will set it as two times window size plus the maximum ORF length.")
     parser.add_argument("-pt", "--pair_helitron", type=int, default=1, required=False, choices=[0, 1],
                         help="For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default yes.")
     parser.add_argument("-is1", "--IS1", type=int, default=0, required=False, choices=[0, 1],
@@ -1765,6 +1858,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-5, help="The p-value for fisher's exact test. default is 1e-5.")
     parser.add_argument("-s", "--score", type=int, required=False, default=32,
                         help="The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 55, default is 32.")
+    parser.add_argument("--nearest", action='store_true', required=False,
+                        help="If you use this parameter, you will use the reciprocal-nearest LTS-RTS pairs as final candidates. By default, HELIANO will try to use the reciprocal-farthest pairs.")
     parser.add_argument("-ts", "--terminal_sequence", type=str, required=False, default='', help="The terminal sequence file. You can find it in the output of previous run (named as pairlist.tbl).")
     parser.add_argument("--dis_denovo", action='store_true', required=False,
                         help="If you use this parameter, you refuse to search for LTS/RTS de novo, instead you will only use the LTS/RTS information described in the terminal sequence file.")
@@ -1772,10 +1867,13 @@ if __name__ == "__main__":
                         help="To allow an auto HLE to have multiple terminal sequences. If you enable this, you might find nonauto HLEs coming from the same auto HLE have different terminal sequences.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.1.0')
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.2.0')
     Args = parser.parse_args()
     if int(Args.score) < 30 or int(Args.score) >= 55:
         sys.stderr.write("Error: The bitscore value should be greater than 30 and less than 55.\n")
+        exit(0)
+    if int(Args.distance_ts) < 0 or int(Args.window) < 0 or int(Args.distance_domain) < 0:
+        sys.stderr.write("Error: Parameter value should not be negative.\n")
         exit(0)
     ## To set and check dependency file path
     HMMFILE = '_HMM_'
@@ -1854,6 +1952,7 @@ if __name__ == "__main__":
         exit(0)
 
     HomoSearch = Homologous_search(HMMFILE, os.path.abspath(Args.genome), os.path.abspath(Args.opdir),
-                                   HEADERFILE, Args.window, Args.distance_domain, Args.pvalue, Args.process)
+                                   HEADERFILE, Args.window, Args.distance_domain, Args.distance_ts, Args.pvalue,
+                                   Args.process)
     HomoSearch.main()
 

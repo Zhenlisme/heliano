@@ -22,6 +22,21 @@ CPU_num=as.numeric(args[8])
 CPU_num = ifelse(CPU_num < MAX_CPU_num, CPU_num, MAX_CPU_num)
 CPU_num = ifelse(CPU_num<1, 1, CPU_num)
 
+
+if(F){
+  setwd('~/remote2/Helitron/Supplementary_material/TEverify/XL_is1020_sim90_s30_dn6k_heliano16_up0620/HLE1/')
+  left_beddir='SubBlastnBed/HLE1_left/'
+  right_beddir='SubBlastnBed/HLE1_right/'
+  combinid_file='HLE1.combinid.txt'
+  subed_dir='HLE1_Windowing'
+  Genome_size_file = '../../Genome.size'
+  HALF_DIST = 15000
+  bedtools_path = '/home/zhenli/bioinfo/bedtools2/bin/'
+  options(bedtools.path = bedtools_path)
+  
+  CPU_num=10
+}
+
 ## To make directory
 if(dir.exists(subed_dir)){
   unlink(subed_dir,recursive = TRUE)
@@ -44,12 +59,7 @@ clusterExport(cl, c('left_flank_dir', 'genome_size_df', 'bedtools_path', 'HALF_D
 clusterEvalQ(cl, list(library(bedtoolsr), options(bedtools.path = bedtools_path, scipen = 200)))
 
 parSapply(cl, left_bedfile_list, function(x){
-  sub_leftbed = read.csv2(x, stringsAsFactors = F, header = F, sep = '\t')
-  sub_leftbed$V2=as.numeric(sub_leftbed$V2)
-  sub_leftbed$V3=as.numeric(sub_leftbed$V3)
-  
-  ## To merge tandem repeats
-  sub_leftbed = sub_leftbed[order(sub_leftbed$V1, sub_leftbed$V2), ]
+  sub_leftbed = bt.sort(x)
   sub_leftbed = bt.merge(sub_leftbed, s=TRUE, d = 100, c="4,5,6", o="first,max,first")
   
   # To backup the real start point
@@ -63,7 +73,7 @@ parSapply(cl, left_bedfile_list, function(x){
   
   colnames(sub_leftbed)=c('chrmid', 'start', 'stop', 'name', 'score', 'strand', 'bk')
   sub_leftbed = merge(sub_leftbed, genome_size_df)
-  sub_leftbed$V3 = ifelse(sub_leftbed$stop <= sub_leftbed$length, sub_leftbed$stop, sub_leftbed$length)
+  sub_leftbed$stop = ifelse(sub_leftbed$stop <= sub_leftbed$length, sub_leftbed$stop, sub_leftbed$length)
   sub_leftbed = sub_leftbed[, c('chrmid', 'start', 'stop', 'name', 'score', 'strand', 'bk')]
   ## To output
   bnm=basename(x)
@@ -80,12 +90,7 @@ clusterExport(cl, c('right_flank_dir', 'genome_size_df', 'bedtools_path', 'HALF_
 clusterEvalQ(cl, list(library(bedtoolsr), options(bedtools.path = bedtools_path, scipen = 200)))
 
 parSapply(cl, right_bedfile_list, function(x){
-  sub_rightbed = read.csv2(x, stringsAsFactors = F, header = F, sep = '\t')
-  sub_rightbed$V2=as.numeric(sub_rightbed$V2)
-  sub_rightbed$V3=as.numeric(sub_rightbed$V3)
-  
-  ## To merge tandem repeats
-  sub_rightbed = sub_rightbed[order(sub_rightbed$V1, sub_rightbed$V2), ]
+  sub_rightbed = bt.sort(x)
   sub_rightbed = bt.merge(sub_rightbed, s=TRUE, d = 100, c="4,5,6", o="first,max,first")
   
   # To backup the real start point
@@ -107,6 +112,7 @@ parSapply(cl, right_bedfile_list, function(x){
   sub_rightfile = paste(right_flank_dir, '/', bnm, sep = '')
   bt.sort(sub_rightbed, output = sub_rightfile)
 })
+
 stopCluster (cl)
 ### To create file path file ####
 
@@ -117,32 +123,8 @@ combine_id=read.csv2(combinid_file, stringsAsFactors = F, header = F, sep = '\t'
 colnames(combine_id)=c('leftname', 'rightname')
 combine_id=combine_id[which(combine_id$leftname %in% leftname_list & combine_id$rightname %in% rightname_list), ]
 
-## To filter out pairs whose sequences are similar.
-cl = makeCluster(CPU_num)
-clusterExport(cl, c('bedtools_path', 'left_beddir', 'right_beddir'), envir = .GlobalEnv)
-clusterEvalQ(cl, list(library(bedtoolsr), options(bedtools.path = bedtools_path)))
-
-Overalp_df = parApply(cl, combine_id, MARGIN = 1, function(x){
-  left_file = paste(left_beddir, '/', x[1], '.bed', sep = '')
-  right_file = paste(right_beddir, '/', x[2], '.bed', sep = '')
-  left_bed = read.csv2(left_file, stringsAsFactors = F, header = F, sep = '\t')
-  right_bed = read.csv2(right_file, stringsAsFactors = F, header = F, sep = '\t')
-  intersection_df = bt.intersect(a=left_bed, b=right_bed, nonamecheck = FALSE, s=FALSE, f=0.8)
-  proportion = nrow(unique(intersection_df))/nrow(left_bed)
-  return(c(x[1], x[2], proportion))
-})
-
-stopCluster (cl)
-Overalp_df = t(Overalp_df)
-colnames(Overalp_df)=c('leftname', 'rightname', 'proportion')
-Overalp_df=as.data.frame(Overalp_df, stringsAsFactors = F)
-Overalp_df$proportion=as.numeric(Overalp_df$proportion)
-
-## select for the non-overlap pairs.
-combine_id = Overalp_df[which(Overalp_df$proportion <0.3), c(1, 2)]
-
 combine_id$leftname=paste(subed_dir, '/leftflank/', combine_id$leftname, '.bed',sep = '')
 combine_id$rightname=paste(subed_dir, '/rightflank/', combine_id$rightname, '.bed', sep = '')
+head(combine_id)
 write.table(combine_id, file = paste(subed_dir, '/', 'left_right.path.join', sep = ''), 
             quote = F, sep="\t", col.names = F, row.names = F)
-
