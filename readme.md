@@ -1,6 +1,8 @@
 [![Anaconda Version](https://anaconda.org/zhenlisme/heliano/badges/version.svg)](https://anaconda.org/zhenlisme/heliano/)
 [![Anaconda Version](https://anaconda.org/zhenlisme/heliano/badges/latest_release_date.svg)](https://anaconda.org/zhenlisme/heliano/)
+[![Anaconda Version](https://anaconda.org/zhenlisme/heliano/badges/platforms.svg)](https://anaconda.org/zhenlisme/heliano/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
+
 
 # HELIANO: A fast and accurate tool for detection of Helitron-like elements.
 Helitron-like elements (HLE1 and HLE2) are DNA transposons. They have been found in diverse species and seem to play significant roles in the evolution of host genomes. Although known for over twenty years, Helitron sequences are still challenging to identify. Here, we propose HELIANO (Helitron-like elements annotator) as an efficient solution for detecting Helitron-like elements.
