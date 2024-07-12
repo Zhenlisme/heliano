@@ -219,6 +219,8 @@ For a precise and quick search, you can use the strigent parameter '-pt 1 -is1 1
 # Release history
 ### v1.0.1
 Initial version
+### v1.0.2
+Fixed some bugs
 ### v1.1.0
 1. Replace term Helitron as HLE1 and Helentron as HLE2.
 2. Enable to predict HLEs based on a pre-identified LTS-RTS pair file. (see -ts and --dis_denovo parameters)
