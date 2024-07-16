@@ -219,15 +219,15 @@ HELIANO is designed to predict complete insertions of Helitron-like elements (HL
 ### 2. How to choose parameters properly?
 For a precise and quick search, you can use the strigent parameter '-pt 1 -is1 1 -is2 1 -p 1e-5 -s 30 -pt 1 -sim_tir 100' that considered the preferred insertion sites of HLE. For big or complex genomes (e.g., maize genome), I just recommed you use the strigent parameter set. But not all HLEs obey their regular preferring insertion sites. If you want to explore more in your interested genome, you can use the loose parameter set, e.g., '-is1 0 -is2 0 -sim_tir 90', and you will have more predictions and longer execution time. Note that the parameters 'is2' and '-sim_tir' are only for HLE2s, and 'is1' and '-pt' are only for Helitrons.
 # Release history
-### v1.0.1
+### [v1.0.1](https://github.com/Zhenlisme/heliano/releases/tag/v1.0.1)
 Initial version
-### v1.0.2
+### [v1.0.2](https://github.com/Zhenlisme/heliano/releases/tag/v1.0.2)
 Fixed some bugs
-### v1.1.0 (https://github.com/Zhenlisme/heliano/releases/tag/v1.1.0)
+### [v1.1.0](https://github.com/Zhenlisme/heliano/releases/tag/v1.1.0)
 1. Replace term Helitron as HLE1 and Helentron as HLE2.
 2. Enable to predict HLEs based on a pre-identified LTS-RTS pair file. (see -ts and --dis_denovo parameters)
 3. Add a new parameter that allows an auto HLE to have multiple terminal sequences. (see '--multi_ts' parameter)
-### v1.2.0 (https://github.com/Zhenlisme/heliano/releases/tag/v1.2.0)
+### [v1.2.0](https://github.com/Zhenlisme/heliano/releases/tag/v1.2.0)
 1. Add parameter '--nearest' that allow users to find terminal pairs whose LTS and RTS are closest with each other. By default, HELIANO will try to find the furthest pairs.
 2. Add parameter '-dn' that allow user to define the length of nonautonomous HLEs. By default (dn 0), HELIANO will deduce it automatically.
 # To contact us
