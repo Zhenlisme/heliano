@@ -205,7 +205,7 @@ heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000 --ts pairlist.tbl --dis_de
 ```
 or not skip the denovo prediction of LTS-RTS process
 ```
-heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000 --ts pairlist.tbl
+heliano -g test.fa -is1 0 -is2 0 -o test_opt -w 15000 -ts pairlist.tbl
 ```
 # References
 ### If you find HELIANO useful to you, please cite:
