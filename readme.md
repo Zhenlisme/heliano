@@ -87,49 +87,6 @@ Before installation , you need to be sure that all dependencies have been instal
 # Usage
 ### Activate the HELIANO conda environment (for conda/mamba installation)  
 `conda activate HELIANO`
-### Check the HELIANO binary  
-`heliano -h`
-```
-usage: heliano [-h] -g GENOME [-w WINDOW] [-dm DISTANCE_DOMAIN] [-pt {0,1}] [-is1 {0,1}] [-is2 {0,1}] [-sim_tir {100,90,80}] [-p PVALUE]
-               [-s SCORE] [-ts TERMINAL_SEQUENCE] [--dis_denovo] [--multi_ts] -o OPDIR [-n PROCESS] [-v]
-
-heliano can detect and classify different variants of Helitron-like elements: HLE1 and HLE2. Please visit
-https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr
-
-options:
-  -h, --help            show this help message and exit
-  -g GENOME, --genome GENOME
-                        The genome file in fasta format.
-  -w WINDOW, --window WINDOW
-                        To check terminal signals within a given window bp upstream and downstream of ORF ends, default is 10 kb.
-  -dm DISTANCE_DOMAIN, --distance_domain DISTANCE_DOMAIN
-                        The distance between HUH and Helicase domain, default is 2500.
-  -pt {0,1}, --pair_helitron {0,1}
-                        For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1:
-                        yes. default yes.
-  -is1 {0,1}, --IS1 {0,1}
-                        Set the insertion site of autonomous HLE1 as A and T. 0: no, 1: yes. default yes.
-  -is2 {0,1}, --IS2 {0,1}
-                        Set the insertion site of autonomous HLE2 as T and T. 0: no, 1: yes. default yes.
-  -sim_tir {100,90,80}, --simtir {100,90,80}
-                        Set the simarity between short inverted repeats(TIRs) of HLE2. Default 100.
-  -p PVALUE, --pvalue PVALUE
-                        The p-value for fisher's exact test. default is 1e-5.
-  -s SCORE, --score SCORE
-                        The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 55,
-                        default is 32.
-  -ts TERMINAL_SEQUENCE, --terminal_sequence TERMINAL_SEQUENCE
-                        The terminal sequence file. You can find it in the output of previous run (named as pairlist.tbl).
-  --dis_denovo          If you use this parameter, you refuse to search for LTS/RTS de novo, instead you will only use the LTS/RTS
-                        information described in the terminal sequence file.
-  --multi_ts            To allow an auto HLE to have multiple terminal sequences. If you enable this, you might find nonauto HLEs coming
-                        from the same auto HLE have different terminal sequences.
-  -o OPDIR, --opdir OPDIR
-                        The output directory.
-  -n PROCESS, --process PROCESS
-                        Maximum of threads to be used.
-  -v, --version         show program's version number and exit
-```
 ### Perform a test run of HELIANO  
 ##### Here we will use the chromosome 18 of Fusarium oxysporum strain Fo5176 as an example, where you can find it in file test.fa .
 Perform the following code:
@@ -151,14 +108,6 @@ There are 11 columns in RC.representative.bed file:
 |CP128282.1|83425|88824|HLE2_left_18-HLE2_right_18|7|-|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_2|
 |CP128282.1|94525|99924|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_3|
 |CP128282.1|306838|312276|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_4|
-|CP128282.1|665681|668554|HLE2_left_33-HLE2_right_32|3|-|1.3547e-05|60|HLE2|nonauto|insertion_HLE2_nonauto_1|
-|CP128282.1|668719|671599|HLE2_left_33-HLE2_right_32|3|+|1.3547e-05|60|HLE2|nonauto|insertion_HLE2_nonauto_2|
-|CP128282.1|855863|858738|HLE2_left_33-HLE2_right_32|3|+|1.3547e-05|60|HLE2|nonauto|insertion_HLE2_nonauto_3|
-|CP128282.1|855863|880806|HLE2_left_33-HLE2_right_32|3|+|1.3547e-05|60|HLE2|auto|insertion_HLE2_auto_5|
-|CP128282.1|926221|928267|CP128282.1-926221-928267|1|-|1|0|HLE2|orfonly|insertion_HLE2_orfonly_1|
-|CP128282.1|963556|968985|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_6|
-|CP128282.1|1107206|1112635|HLE2_left_18-HLE2_right_18|7|+|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_7|
-|CP128282.1|1259412|1264991|HLE2_left_18-HLE2_right_18|7|-|6.3390e-07|60|HLE2|auto|insertion_HLE2_auto_8|
 ##### Detailed explaination for each column.
 Notice: The insertions that encode Rep/helicase are considered putative autonomous HLEs.
 |Columns|Explaination|
