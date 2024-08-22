@@ -5,7 +5,7 @@
 
 
 # HELIANO: A fast and accurate tool for detection of Helitron-like elements.
-Helitron-like elements (HLE1 and HLE2) are DNA transposons. They have been found in diverse species and seem to play significant roles in the evolution of host genomes. Although known for over twenty years, Helitron sequences are still challenging to identify. Here, we propose HELIANO (Helitron-like elements annotator) as an efficient solution for detecting Helitron-like elements.
+Helitron-like elements (HLE1 and HLE2) are DNA transposons. They have been found in diverse species and seem to play significant roles in the evolution of host genomes. Although known for over twenty years, Helitron sequences are still challenging to identify. Here, we propose HELIANO (Helitron-like elements annotator) as an efficient solution for detecting Helitron-like elements. Please check  [wiki](https://github.com/Zhenlisme/heliano/wiki/1.-Home) for detailed usage.
 
 # Table of contents
 - [Update Note](#Update-Note)
