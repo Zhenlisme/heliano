@@ -180,4 +180,4 @@ Fixed some bugs
 1. Add parameter '--nearest' that allow users to find terminal pairs whose LTS and RTS are closest with each other. By default, HELIANO will try to find the furthest pairs.
 2. Add parameter '-dn' that allow user to define the length of nonautonomous HLEs. By default (dn 0), HELIANO will deduce it automatically.
 # To contact us
-For any questions, please open an issue in [the issues section](https://github.com/Zhenlisme/heliano/issues) or email us: zhen.li3@universite-paris-saclay.fr or nicolas.pollet@universite-paris-saclay.fr
+For any questions, please open an issue in [the issues section](https://github.com/Zhenlisme/heliano/issues).
