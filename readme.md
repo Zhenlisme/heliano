@@ -179,5 +179,7 @@ Fixed some bugs
 ### [v1.2.0](https://github.com/Zhenlisme/heliano/releases/tag/v1.2.0)
 1. Add parameter '--nearest' that allow users to find terminal pairs whose LTS and RTS are closest with each other. By default, HELIANO will try to find the furthest pairs.
 2. Add parameter '-dn' that allow user to define the length of nonautonomous HLEs. By default (dn 0), HELIANO will deduce it automatically.
+### [v1.2.1](https://github.com/Zhenlisme/heliano/releases/tag/v1.2.1)
+Add the '-flank_sim' parameter which allow users to set the cut-off to define false positive LTS/RTS. The lower the value, the more strigent. This value was set to 0.7 in previous versions but it is now set as 0.5 by default.
 # To contact us
 For any questions, please open an issue in [the issues section](https://github.com/Zhenlisme/heliano/issues).
