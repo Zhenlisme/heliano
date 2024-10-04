@@ -164,6 +164,7 @@ class Homologous_search:
         self.distance_domain = distance_domain
         self.distance_na = defaultdict(lambda :int(distance_na))
         self.pvalue = float(pvalue)
+        self.cutoff_flank = float(Args.flank_sim)
         if Args.terminal_sequence:
             self.pairfile = os.path.abspath(Args.terminal_sequence)
             sys.stdout.write('You added the pairfile %s.\n' % self.pairfile)
@@ -1477,16 +1478,16 @@ class Homologous_search:
             for line in alternative_list:
                 pairname = line[3]
                 ## insertions that only contain orf regions will automatically pass this filter, because default value is 0.
-                if self.Boundary_iden_dict[pairname]['left'] < 0.7 and self.Boundary_iden_dict[pairname]['right'] < 0.7:
+                if self.Boundary_iden_dict[pairname]['left'] < self.cutoff_flank and self.Boundary_iden_dict[pairname]['right'] < self.cutoff_flank:
                     candidate_list.append(line)
         else: ## means HLE2
             for line in alternative_list:
                 pairname = line[3]
                 left_iden, right_iden = self.Boundary_iden_dict[pairname]['left'], self.Boundary_iden_dict[pairname]['right']
-                if left_iden < 0.7:
+                if left_iden < self.cutoff_flank:
                     ## means regular HLE2, try to find stem-loop terminal markers at 5'end
                     candidate_list.append(line)
-                elif right_iden < 0.7 and left_iden >= 0.7:
+                elif right_iden < self.cutoff_flank and left_iden >= self.cutoff_flank:
                     ## unregular HLE2, try to find stem-loop terminal markers at 3'end
                     line[-3] = ''.join([line[-3], '.2'])
                     candidate_list.append(line)
@@ -1539,10 +1540,10 @@ class Homologous_search:
                     right_value = float(self.Boundary_iden_dict[pair]['right'])
                     classname = pair.split('_left')[0]
                     if 'HLE2' in pair:
-                        if left_value < 0.7 or right_value < 0.7:
+                        if left_value < self.cutoff_flank or right_value < self.cutoff_flank:
                             convienced_dict[classname].append(pair)
                     else:  ## means Helitron
-                        if left_value < 0.7 and right_value < 0.7:
+                        if left_value < self.cutoff_flank and right_value < self.cutoff_flank:
                             convienced_dict[classname].append(pair)
 
         oplist = []
@@ -1855,6 +1856,8 @@ if __name__ == "__main__":
                         help="Set the insertion site of autonomous HLE2 as T and T. 0: no, 1: yes. default yes.")
     parser.add_argument("-sim_tir", "--simtir", type=int, default=100, required=False, choices=[100, 90, 80],
                         help="Set the simarity between short inverted repeats(TIRs) of HLE2. Default 100.")
+    parser.add_argument("-flank_sim", "--flank_sim", type=float, default=0.5, required=False, choices=[0.4, 0.5, 0.6, 0.7],
+                        help="The cut-off to define false positive LTS/RTS. The lower the value, the more strigent. Default 0.5.")
     parser.add_argument("-p", "--pvalue", type=float, required=False, default=1e-5, help="The p-value for fisher's exact test. default is 1e-5.")
     parser.add_argument("-s", "--score", type=int, required=False, default=32,
                         help="The minimum bitscore of blastn for searching for homologous sequences of terminal signals. From 30 to 55, default is 32.")
@@ -1866,8 +1869,8 @@ if __name__ == "__main__":
     parser.add_argument("--multi_ts", action='store_true', required=False,
                         help="To allow an auto HLE to have multiple terminal sequences. If you enable this, you might find nonauto HLEs coming from the same auto HLE have different terminal sequences.")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
-    parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum of threads to be used.")
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.2.0')
+    parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum number of threads to be used.")
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.2.1')
     Args = parser.parse_args()
     if int(Args.score) < 30 or int(Args.score) >= 55:
         sys.stderr.write("Error: The bitscore value should be greater than 30 and less than 55.\n")
