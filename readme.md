@@ -1,5 +1,5 @@
 [![Anaconda Version](https://anaconda.org/zhenlisme/heliano/badges/version.svg)](https://anaconda.org/zhenlisme/heliano/)
-[![Anaconda Version](https://anaconda.org/zhenlisme/heliano/badges/latest_release_date.svg)](https://anaconda.org/zhenlisme/heliano/)
+[![Anaconda Version](https://anaconda.org/zhenlisme/heliano/badges/latest_release_relative_date.svg)](https://anaconda.org/zhenlisme/heliano/)
 [![Anaconda Version](https://anaconda.org/zhenlisme/heliano/badges/platforms.svg)](https://anaconda.org/zhenlisme/heliano/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
 
