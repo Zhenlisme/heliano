@@ -182,4 +182,4 @@ Fixed some bugs
 ### [v1.2.1](https://github.com/Zhenlisme/heliano/releases/tag/v1.2.1)
 Add the '-flank_sim' parameter which allows users to set the cut-off to define false positive LTS/RTS. The lower the value, the more strigent. This value was set to 0.7 in previous versions but it is now set as 0.5 by default.
 # To contact us
-For any questions, please open an issue in [the issues section](https://github.com/Zhenlisme/heliano/issues).
+For any questions, please open an issue in [the issues section](https://github.com/Zhenlisme/heliano/issues) or send me a email to zhen.li3@universite-paris-saclay.fr.
