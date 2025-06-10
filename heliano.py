@@ -152,7 +152,7 @@ class Structure_search:
 
 # define Homologous_search class to find Helitron-like transposase domain and theri auto/non-auto relatives
 class Homologous_search:
-    def __init__(self, rep_hel_hmm, genome, wkdir, headerfile, window, distance_domain, distance_na, pvalue, process_num):
+    def __init__(self, rep_hel_hmm, genome, wkdir, headerfile, window, distance_domain, distance_na, pvalue, process_num, codetable):
         self.rep_hel_hmm = rep_hel_hmm
         self.genome = genome
         self.genome_dict = SeqIO.parse(genome, 'fasta')
@@ -264,6 +264,11 @@ class Homologous_search:
                                         stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         makeblastndb.wait()
 
+        ## code table
+        code_table_dict = {0: (0, "Standard"), 1: (6, "Ciliate Macronuclear and Dasycladacean"),
+                           2: (15, "Blepharisma Macronuclear"), 3: (22, "Scenedesmus obliquus")}
+        self.codetable = code_table_dict[codetable]
+        sys.stdout.write('You are using the (%s) code to predict ORFs.\n' % self.codetable[1])
     def hmmsearch(self, subgenome):
         # Run hmmersearch program to search for Helitron-like transposase
         orf_file = ''.join([subgenome, '.orf'])
@@ -271,7 +276,8 @@ class Homologous_search:
 
         #The index of getorf output starts from 1, not 0
         # Use getorf to predicte open reading frames for a given genome
-        get_orf = subprocess.Popen(['getorf', '-sequence', subgenome, '-outseq', orf_file, '-minsize', '100'],
+        get_orf = subprocess.Popen(['getorf', '-sequence', subgenome, '-outseq', orf_file, '-minsize', '100',
+                                    '-maxsize', '30000', '-table', str(self.codetable[0])],
                                    stderr=subprocess.DEVNULL)
         get_orf.wait()
 
@@ -1843,17 +1849,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="heliano can detect and classify different variants of Helitron-like elements: HLE1 and HLE2. Please visit https://github.com/Zhenlisme/heliano/ for more information. Email us: zhen.li3@universite-paris-saclay.fr")
     parser.add_argument("-g", "--genome", type=str, required=True, help="The genome file in fasta format.")
     parser.add_argument("-w", "--window", type=int, default=10000, required=False,
-                        help="To check terminal signals within a given window bp upstream and downstream of ORF ends, default is 10 kb.")
+                        help="To check terminal signals within a given window bp upstream and downstream of ORF ends. default is 10 kb.")
     parser.add_argument("-dm", "--distance_domain", type=int, default=2500, required=False,
                         help="The distance between HUH and Helicase domain, default is 2500.")
     parser.add_argument("-dn", "--distance_ts", type=int, default=0, required=False,
                         help="The maximum distance between LTS and RTS. If not specified, HELIANO will set it as two times window size plus the maximum ORF length.")
     parser.add_argument("-pt", "--pair_helitron", type=int, default=1, required=False, choices=[0, 1],
-                        help="For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes. default yes.")
+                        help="For HLE1, its 5' and 3' terminal signal pairs should come from the same autonomous helitorn or not. 0: no, 1: yes (default).")
     parser.add_argument("-is1", "--IS1", type=int, default=0, required=False, choices=[0, 1],
-                        help="Set the insertion site of autonomous HLE1 as A and T. 0: no, 1: yes. default yes.")
+                        help="Set the insertion site of autonomous HLE1 as A and T. 0: no, 1: yes (default).")
     parser.add_argument("-is2", "--IS2", type=int, default=0, required=False, choices=[0, 1],
-                        help="Set the insertion site of autonomous HLE2 as T and T. 0: no, 1: yes. default yes.")
+                        help="Set the insertion site of autonomous HLE2 as T and T. 0: no, 1: yes (default).")
     parser.add_argument("-sim_tir", "--simtir", type=int, default=100, required=False, choices=[100, 90, 80],
                         help="Set the simarity between short inverted repeats(TIRs) of HLE2. Default 100.")
     parser.add_argument("-flank_sim", "--flank_sim", type=float, default=0.5, required=False, choices=[0.4, 0.5, 0.6, 0.7],
@@ -1868,9 +1874,12 @@ if __name__ == "__main__":
                         help="If you use this parameter, you refuse to search for LTS/RTS de novo, instead you will only use the LTS/RTS information described in the terminal sequence file.")
     parser.add_argument("--multi_ts", action='store_true', required=False,
                         help="To allow an auto HLE to have multiple terminal sequences. If you enable this, you might find nonauto HLEs coming from the same auto HLE have different terminal sequences.")
+    parser.add_argument("-tb", "--table", type=int, required=False, choices=[0, 1, 2, 3], default=0,
+                        help="""Code to use for the open reading fram prediction. 0: Standard (default); 1: Ciliate Macronuclear and Dasycladacean; 
+                        2: Blepharisma Macronuclear; 3: Scenedesmus obliquus""")
     parser.add_argument("-o", "--opdir", type=str, required=True, help="The output directory.")
     parser.add_argument("-n", "--process", type=int, default=2, required=False, help="Maximum number of threads to be used.")
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.2.1')
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 1.3.1')
     Args = parser.parse_args()
     if int(Args.score) < 30 or int(Args.score) >= 55:
         sys.stderr.write("Error: The bitscore value should be greater than 30 and less than 55.\n")
@@ -1956,6 +1965,6 @@ if __name__ == "__main__":
 
     HomoSearch = Homologous_search(HMMFILE, os.path.abspath(Args.genome), os.path.abspath(Args.opdir),
                                    HEADERFILE, Args.window, Args.distance_domain, Args.distance_ts, Args.pvalue,
-                                   Args.process)
+                                   Args.process, Args.table)
     HomoSearch.main()
 
