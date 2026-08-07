@@ -37,8 +37,8 @@ class Structure_search:
         with open(rnabobopt, 'r') as F:
             for line in F:
                 line = line.strip()
-                if re.match('\d', line):
-                    splitline = re.split('\s+', line)[:3]
+                if re.match(r'\d', line):
+                    splitline = re.split(r'\s+', line)[:3]
                     chrid = splitline[2]
                     ## To avoid rnabob bugs
                     if int(splitline[1]) < 0:
@@ -299,11 +299,11 @@ class Homologous_search:
             for line in F:
                 if line.startswith('#'):
                     continue
-                splitlines = re.split('\s+', line.rstrip())
+                splitlines = re.split(r'\s+', line.rstrip())
                 domain, sub_class = splitlines[3].split('_')
                 subchrname = "_".join(splitlines[0].split('_')[:-1])
                 chrm_name, START = subchrname.split('startat')
-                start, end = re.findall('\[(\d+)\s+-\s+(\d+)\]', line)[0]
+                start, end = re.findall(r'\[(\d+)\s+-\s+(\d+)\]', line)[0]
                 start = str(int(start) + int(START))
                 end = str(int(end) + int(START))
 
